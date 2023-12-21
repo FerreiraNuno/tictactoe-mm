@@ -1,0 +1,44 @@
+lib-cov
+*.seed
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
+*.swp
+
+pids
+logs
+results
+tmp
+
+# Envs
+.env.local
+
+# Build
+dist
+
+# Coverage reports
+coverage
+
+# Bundle size reports
+bundlesize
+
+# API keys and secrets
+.env
+.env.local
+
+# Local SSL certificates
+.ssl
+
+# Dependency directory
+node_modules
+
+# Editors
+.idea
+*.iml
+
+# OS metadata
+.DS_Store
+Thumbs.db
