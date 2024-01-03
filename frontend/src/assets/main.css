@@ -31,8 +31,6 @@
 
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
-
-  --section-gap: 160px;
 }
 
 *,
@@ -40,42 +38,25 @@
 *::after {
   box-sizing: border-box;
   margin: 0;
-  font-weight: normal;
+  font-size: 16px;
 }
 
 body {
   overflow: hidden;
+  background-color: #8EC5FC;
+  background-image: linear-gradient(329deg, #8EC5FC 0%, #E0C3FC 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
   min-height: 100vh;
   color: var(--color-text);
-  line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
-  font-size: 15px;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 #app {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
-  font-weight: normal;
 }
 
 a,

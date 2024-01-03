@@ -50,12 +50,11 @@ const toggleActiveForm = (formName: string) => {
     padding: 20px;
     margin: auto;
     width: 40vw;
-    height: 85vh;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     border-radius: 20px;
     position: absolute;
     top: 50%;
-    left: 60%;
+    left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
     flex-direction: column;
@@ -70,13 +69,18 @@ const toggleActiveForm = (formName: string) => {
 }
 
 .toggle-btn {
-    background-color: transparent;
+    background-color: #fff;
+    color: #000;
     border: none;
     padding: 10px 20px;
     cursor: pointer;
     transition: background-color 0.3s;
     flex-grow: 1;
     text-align: center;
+}
+
+.toggle-btn:hover {
+    background-color: #ececec;
 }
 
 .active-indicator {
@@ -89,22 +93,17 @@ const toggleActiveForm = (formName: string) => {
     transition: left 0.3s;
 }
 
-/* Change the left position based on active button */
 #signup-btn.active~.active-indicator {
     left: 50%;
-    /* Move under the second button */
 }
 
-.form {
+form {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    /* Evenly distribute space between form elements */
     flex-grow: 1;
-    /* Take available space */
 }
 
-.form label {
+label {
     color: #2a2a2a;
     display: block;
     margin-bottom: 7px;
