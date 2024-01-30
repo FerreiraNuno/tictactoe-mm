@@ -44,14 +44,22 @@ function checkWinner(): void {
 
 <template>
     <div class="container">
-        <div class="left rounded-xl">
-            <div id="tic-tac-toe">
+        <div class="left rounded-xl flex flex-col px-16 py-8">
+            <div class="flex justify-end w-full items-end mr-6">
+                <div class="ml-1 font-bold">nuno_der</div>
+                <div class="ml-1">(1231)</div>
+            </div>
+            <div id="tic-tac-toe" class="my-4">
                 <div v-for="(row, rowIndex) in board" :key="rowIndex" class="row">
                     <div v-for="(cell, cellIndex) in row" :key="cellIndex" class="cell"
                         @click="makeMove(rowIndex, cellIndex)">
                         {{ cell }}
                     </div>
                 </div>
+            </div>
+            <div class="flex justify-start w-full items-end ml-2">
+                <div class="ml-1 font-bold">the_Law</div>
+                <div class="ml-1">(1203)</div>
             </div>
         </div>
         <div class="right rounded-xl"></div>
@@ -69,7 +77,6 @@ function checkWinner(): void {
 }
 
 .left {
-    width: 55vw;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -88,20 +95,20 @@ function checkWinner(): void {
 #tic-tac-toe {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    padding: 10px;
     border-radius: 12px;
 }
 
 .cell {
-    width: 100px;
-    height: 100px;
+    width: 7vw;
+    height: 7vw;
     border-radius: 12px;
     margin: 5px;
     background-color: #cceef2;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2em;
+    font-size: 1.8em;
+    font-weight: 600;
     color: #548ada;
     cursor: pointer;
     user-select: none;
