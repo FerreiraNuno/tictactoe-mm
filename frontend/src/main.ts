@@ -6,6 +6,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import LandingPage from "./components/LandingPage.vue";
 import LoginModal from "./components/LoginModal.vue";
+import RegisterModal from "./components/RegisterModal.vue";
 import GameView from "./components/GameView.vue";
 
 const router = createRouter({
@@ -13,6 +14,7 @@ const router = createRouter({
     routes: [
         { path: '/', component: LandingPage },
         { path: '/login', component: LoginModal },
+        { path: '/register', component: RegisterModal },
         { path: '/play', component: GameView },
         { path: '/:pathMatch(.*)*', redirect: '/' }, // catch-all route
     ],

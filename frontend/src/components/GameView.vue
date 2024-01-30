@@ -44,7 +44,7 @@ function checkWinner(): void {
 
 <template>
     <div class="container">
-        <div class="left">
+        <div class="left rounded-xl">
             <div id="tic-tac-toe">
                 <div v-for="(row, rowIndex) in board" :key="rowIndex" class="row">
                     <div v-for="(cell, cellIndex) in row" :key="cellIndex" class="cell"
@@ -54,7 +54,7 @@ function checkWinner(): void {
                 </div>
             </div>
         </div>
-        <div class="right"></div>
+        <div class="right rounded-xl"></div>
     </div>
 </template>
 
@@ -63,37 +63,32 @@ function checkWinner(): void {
 .container {
     display: flex;
     flex-direction: row;
-    width: 65vw;
+    width: 80vw;
     height: 75vh;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
     overflow: hidden;
-    background-color: #ffffff;
-    /* White background as requested */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
 }
 
 .left {
-    width: 75vh;
+    width: 55vw;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 1px solid #e5e5e5;
+    margin-right: 2rem;
+    background-color: white;
 }
 
 .right {
     flex-grow: 1;
-    background-color: #f0f0f0;
+    background-color: rgb(250, 250, 250);
     min-width: 15em;
+    border: 1px solid #e5e5e5;
 }
 
 #tic-tac-toe {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     padding: 10px;
-    background-color: #ffffff;
     border-radius: 12px;
 }
 
@@ -107,14 +102,14 @@ function checkWinner(): void {
     justify-content: center;
     align-items: center;
     font-size: 2em;
-    color: #0097a7;
+    color: #548ada;
     cursor: pointer;
     user-select: none;
     transition: background-color 0.3s;
 }
 
 .cell:hover {
-    background-color: #b2ebf2;
+    background-color: #a1e0e9;
 }
 
 .cell:not(:empty) {
