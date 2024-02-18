@@ -5,8 +5,8 @@ import { CreateUserDTO } from "./models/DTO/CreateUserDTO";
 import { EncryptService } from "./services/encrypt/encrypt.service";
 import { LoginDTO } from "./models/DTO/LoginDTO";
 import { AuthService } from "./services/auth/auth.service";
-import { jwtConstants } from "./services/auth/constant";
 import { AuthModule } from "./services/auth/auth.module";
+import { ApiResponse } from '@nestjs/swagger';
 
 @Controller("/api/v1/user")
 export class UserController {
@@ -28,6 +28,7 @@ export class UserController {
   }
 
   @Post("/register")
+  @ApiResponse({ type: User })
   async addUser(@Body() user: CreateUserDTO): Promise<User> {
     if (user.password.length < 8 || user.password.length > 72) {
       throw new HttpException("The password must be between 8 and 72 characters", HttpStatus.BAD_REQUEST);
