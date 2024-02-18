@@ -1,27 +1,31 @@
 import { Module } from "@nestjs/common";
 import { UserController } from "./UserController";
-import { AppService } from "./app.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./models/User";
 import { EncryptService } from "./services/encrypt/encrypt.service";
 import { AuthService } from "./services/auth/auth.service";
 import { JwtService } from "@nestjs/jwt";
+import { ConfigModule } from "@nestjs/config";
+import { AuthModule } from "./services/auth/auth.module";
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: './db.sqlite',
+      type: "sqlite",
+      database: "./db.sqlite",
       entities: [User],
-      synchronize: true,
+      synchronize: true
+    }),
+    ConfigModule.forRoot({
+      envFilePath: ".env"
     }),
   ],
   controllers: [UserController],
   providers: [
-    AppService,
     EncryptService,
     AuthService,
-    JwtService
+    JwtService,
+    AuthModule
   ]
 })
 export class AppModule {

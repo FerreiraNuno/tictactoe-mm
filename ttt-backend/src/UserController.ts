@@ -1,21 +1,22 @@
 import { Body, Controller, Get, HttpException, HttpStatus, NotFoundException, Post } from "@nestjs/common";
-import { AppService } from "./app.service";
 import { User } from "./models/User";
 import { DataSource, Repository } from "typeorm";
 import { CreateUserDTO } from "./models/DTO/CreateUserDTO";
 import { EncryptService } from "./services/encrypt/encrypt.service";
 import { LoginDTO } from "./models/DTO/LoginDTO";
 import { AuthService } from "./services/auth/auth.service";
+import { jwtConstants } from "./services/auth/constant";
+import { AuthModule } from "./services/auth/auth.module";
 
 @Controller("/api/v1/user")
 export class UserController {
   private readonly userRepository: Repository<User>;
 
   constructor(
-    private readonly appService: AppService,
     private dataSource: DataSource,
     private encryptService: EncryptService,
-    private authService: AuthService
+    private authService: AuthService,
+    private authModule: AuthModule
   ) {
     this.userRepository = dataSource.getRepository(User);
     this.userRepository.create(new User());
@@ -31,7 +32,7 @@ export class UserController {
     if (user.password.length < 8 || user.password.length > 72) {
       throw new HttpException("The password must be between 8 and 72 characters", HttpStatus.BAD_REQUEST);
     }
-    
+
     if (user.username.length < 2 || user.username.length > 64) {
       throw new HttpException("The username must be between 2 and 64 characters", HttpStatus.BAD_REQUEST);
     }
