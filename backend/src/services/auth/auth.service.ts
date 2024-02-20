@@ -9,7 +9,9 @@ export class AuthService {
   }
 
   public async signIn(userId: number, username: string): Promise<string>{
-    return await this.jwtService.signAsync({sub: userId, username: username});
+    return await this.jwtService.signAsync({
+      sub: userId, username: username
+    });
   }
 
 }

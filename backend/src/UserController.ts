@@ -1,35 +1,49 @@
-import { Body, Controller, Get, HttpException, HttpStatus, NotFoundException, Post } from "@nestjs/common";
-import { User } from "./models/User";
-import { DataSource, Repository } from "typeorm";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  NotFoundException, Param,
+  Post, Res, UploadedFile,
+  UseInterceptors
+} from "@nestjs/common";
+import { User } from "./models/db-models/User";
 import { CreateUserDTO } from "./models/DTO/CreateUserDTO";
-import { EncryptService } from "./services/encrypt/encrypt.service";
 import { LoginDTO } from "./models/DTO/LoginDTO";
 import { AuthService } from "./services/auth/auth.service";
 import { AuthModule } from "./services/auth/auth.module";
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from "@nestjs/swagger";
+import { OK } from "sqlite3";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { Response } from "express";
+import { UserInfoDTO } from "./models/DTO/UserInfoDTO";
+import { UserService } from "./services/user/user.service";
+
 
 @Controller("/api/v1/user")
+@ApiTags('user')
 export class UserController {
-  private readonly userRepository: Repository<User>;
 
   constructor(
-    private dataSource: DataSource,
-    private encryptService: EncryptService,
+    private userService: UserService,
     private authService: AuthService,
     private authModule: AuthModule
   ) {
-    this.userRepository = dataSource.getRepository(User);
-    this.userRepository.create(new User());
   }
 
-  @Get()
-  async getUsers(): Promise<User[]> {
-    return await this.userRepository.find();
+  @Get("/all")
+  @ApiResponse({ status: OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
+  @ApiResponse({ type: User, isArray: true})
+  async getUsers(): Promise<UserInfoDTO[]> {
+    return await this.userService.getAllUsers()
   }
 
   @Post("/register")
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'The user was created successfully', type: UserInfoDTO})
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'The Password or the username are to short or to long'})
   @ApiResponse({ type: User })
-  async addUser(@Body() user: CreateUserDTO): Promise<User> {
+  async addUser(@Body() user: CreateUserDTO): Promise<UserInfoDTO> {
     if (user.password.length < 8 || user.password.length > 72) {
       throw new HttpException("The password must be between 8 and 72 characters", HttpStatus.BAD_REQUEST);
     }
@@ -38,26 +52,21 @@ export class UserController {
       throw new HttpException("The username must be between 2 and 64 characters", HttpStatus.BAD_REQUEST);
     }
 
-    const userAlreadyExists = await this.userRepository.exists({ where: { username: user.username } });
-    if (userAlreadyExists) throw new HttpException(`User '${user.username}' already exists`, HttpStatus.CONFLICT);
-
-    const newUser: User = new User();
-    newUser.username = user.username;
-    newUser.password = await this.encryptService.encryptPassword(user.password);
-    return await this.userRepository.save(newUser);
+    return await this.userService.register(user)
   }
 
   @Post("/login")
-  async login(@Body() user: LoginDTO): Promise<string> {
-    const foundUser = await this.userRepository.findOne({ where: { username: user.username } });
-    if (!foundUser) {
-      throw new NotFoundException();
-    }
-    const isPasswordRight = await this.encryptService.compare(user.password, foundUser.password);
-    if (!isPasswordRight) {
-      throw new HttpException("Username or Password is wrong", HttpStatus.NOT_FOUND);
-    }
+  @ApiResponse({description: "If the user cann not be found an NOT_FOUND will be returned. We will not specify if the password was wrong or the username", status: HttpStatus.NOT_FOUND})
+  @ApiResponse({type: UserInfoDTO, description: "After a successful login a 'ttt-userid' cookie will be set to identify the user for future requests", status: HttpStatus.OK})
+  async login(@Body() user: LoginDTO, @Res({ passthrough: true }) response: Response): Promise<UserInfoDTO> {
+    return await this.userService.login(user, response)
+  }
 
-    return await this.authService.signIn(foundUser.id, foundUser.username);
+  @Post('/:id/upload-image')
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: UserInfoDTO })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async uploadImage(@Param('id') id: number, @UploadedFile() file: File): Promise<User> {
+    return await this.userService.uploadImages(id, file)
   }
 }

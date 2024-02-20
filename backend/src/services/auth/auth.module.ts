@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from "@nestjs/jwt";
-//import { jwtConstants } from "./constant";
 import { UserController } from "../../UserController";
 import { AuthService } from "./auth.service";
 
@@ -10,9 +9,13 @@ function test() {
 }
 
 @Module({  imports: [
-    JwtModule.register({
-      secret: test(), //jwtConstants.secret,
-      signOptions: { expiresIn: '60s' },
+    JwtModule.registerAsync({
+      useFactory: () => {
+        return {
+          secret: test(),
+          secretOrPrivateKey: test()
+        }
+      }
     })],
   providers: [AuthService,],
   controllers: [UserController],
