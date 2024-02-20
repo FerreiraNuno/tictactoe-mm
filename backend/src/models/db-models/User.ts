@@ -1,5 +1,4 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { ApiProperty } from "@nestjs/swagger";
 
 @Entity()
 export class User {
@@ -19,5 +18,5 @@ export class User {
   mmr: number;
 
   @Column({ type:'blob', nullable: true })
-  image: ArrayBuffer;
+  image: Buffer;
 }

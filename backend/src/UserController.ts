@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
   NotFoundException, Param,
-  Post, Res, UploadedFile,
+  Post, Res, StreamableFile, UploadedFile,
   UseInterceptors
 } from "@nestjs/common";
 import { User } from "./models/db-models/User";
@@ -19,6 +19,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { UserInfoDTO } from "./models/DTO/UserInfoDTO";
 import { UserService } from "./services/user/user.service";
+import {Builder} from "@nestjs/cli/lib/configuration";
 
 
 @Controller("/api/v1/user")
@@ -64,9 +65,18 @@ export class UserController {
 
   @Post('/:id/upload-image')
   @UseInterceptors(FileInterceptor('image'))
-  @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: UserInfoDTO })
+  @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: Response })
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async uploadImage(@Param('id') id: number, @UploadedFile() file: File): Promise<User> {
-    return await this.userService.uploadImages(id, file)
+  async uploadImage(@Param('id') id: number,@UploadedFile() file: Express.Multer.File): Promise<Response> {
+    return await this.userService.uploadImage(id, file)
+  }
+
+  @Get('/:id/image')
+  @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: Buffer })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getImage(@Param('id') id: number, @Res() res) {
+    let image: Buffer = await this.userService.getImage(id);
+    res.type('image/jpeg');
+    res.send(image);
   }
 }
