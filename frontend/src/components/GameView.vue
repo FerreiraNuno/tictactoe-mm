@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import Chat from './Chat.vue';
 
 const board = ref([
     ['X', 'O', ''],
@@ -62,7 +63,9 @@ function checkWinner(): void {
                 <div class="ml-1">(1203)</div>
             </div>
         </div>
-        <div class="right rounded-xl"></div>
+        <div class="right rounded-xl">
+            <Chat />
+        </div>
     </div>
 </template>
 
@@ -77,6 +80,7 @@ function checkWinner(): void {
 }
 
 .left {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -86,7 +90,7 @@ function checkWinner(): void {
 }
 
 .right {
-    flex-grow: 1;
+    flex: 1;
     background-color: rgb(250, 250, 250);
     min-width: 15em;
     border: 1px solid #e5e5e5;
