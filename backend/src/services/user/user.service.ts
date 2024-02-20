@@ -56,7 +56,6 @@ export class UserService {
         return UserInfoDTO.fromUser(foundUser)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async uploadImage(id: number, file: Express.Multer.File) {
         let user = await this.userRepository.findOneBy({id});
         if (!user) {

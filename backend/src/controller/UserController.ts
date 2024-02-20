@@ -8,17 +8,17 @@ import {
   Post, Res, StreamableFile, UploadedFile,
   UseInterceptors
 } from "@nestjs/common";
-import { User } from "./models/db-models/User";
-import { CreateUserDTO } from "./models/DTO/CreateUserDTO";
-import { LoginDTO } from "./models/DTO/LoginDTO";
-import { AuthService } from "./services/auth/auth.service";
-import { AuthModule } from "./services/auth/auth.module";
+import { User } from "../models/db-models/User";
+import { CreateUserDTO } from "../models/DTO/CreateUserDTO";
+import { LoginDTO } from "../models/DTO/LoginDTO";
+import { AuthService } from "../services/auth/auth.service";
+import { AuthModule } from "../services/auth/auth.module";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import { OK } from "sqlite3";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
-import { UserInfoDTO } from "./models/DTO/UserInfoDTO";
-import { UserService } from "./services/user/user.service";
+import { UserInfoDTO } from "../models/DTO/UserInfoDTO";
+import { UserService } from "../services/user/user.service";
 import {Builder} from "@nestjs/cli/lib/configuration";
 
 
@@ -66,14 +66,12 @@ export class UserController {
   @Post('/:id/upload-image')
   @UseInterceptors(FileInterceptor('image'))
   @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: Response })
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async uploadImage(@Param('id') id: number,@UploadedFile() file: Express.Multer.File): Promise<Response> {
     return await this.userService.uploadImage(id, file)
   }
 
   @Get('/:id/image')
   @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: Buffer })
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getImage(@Param('id') id: number, @Res() res) {
     let image: Buffer = await this.userService.getImage(id);
     res.type('image/jpeg');
