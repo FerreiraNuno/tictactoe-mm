@@ -24,7 +24,8 @@ To start the Vue frontend, follow these steps:
     The Vue frontend will be accessible at the localhost url.
 
 ## Backend
-To start the Vue frontend, follow these steps:
+
+To start the backend, follow these steps:
 
 1. Navigate to the `backend` directory:
 
