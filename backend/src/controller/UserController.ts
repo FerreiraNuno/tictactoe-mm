@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Param,
-  Post, Res, SetMetadata, UploadedFile,
+  Post, Put, Res, SetMetadata, UploadedFile,
   UseGuards,
   UseInterceptors
 } from "@nestjs/common";
@@ -62,7 +62,7 @@ export class UserController {
     return await this.userService.login(user, response)
   }
 
-  @Post('/:id/upload-image')
+  @Put('/:id/upload-image')
   @UseGuards(IsLoggedInGuard)
   @UseInterceptors(FileInterceptor('image'))
   @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: Response })

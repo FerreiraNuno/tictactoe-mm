@@ -4,13 +4,14 @@ import {UserController} from "../../controller/UserController";
 import { AuthService } from './auth.service';
 import {UserService} from "../user/user.service";
 import {EncryptService} from "../encrypt/encrypt.service";
+import {jwtConstants} from "./constant";
 
 @Module({
     controllers: [UserController],
     providers: [AuthService, UserService, EncryptService],
     imports: [
         JwtModule.register({
-            secret: "test",
+            secret: jwtConstants.secret,
             global: true,
             signOptions: {expiresIn: '7d'}
         })

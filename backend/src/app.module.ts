@@ -15,15 +15,15 @@ import {AuthModule} from "./services/auth/auth.module";
         AuthService,
     ],
     imports: [
+        ConfigModule.forRoot({
+            envFilePath: ".env"
+        }),
         AuthModule,
         TypeOrmModule.forRoot({
             type: "sqlite",
             database: "./db.sqlite",
             entities: [User],
             synchronize: true
-        }),
-        ConfigModule.forRoot({
-            envFilePath: ".env"
         }),
     ],
     controllers: [UserController]

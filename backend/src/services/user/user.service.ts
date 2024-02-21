@@ -21,6 +21,28 @@ export class UserService {
     ) {
         this.userRepository = dataSource.getRepository(User);
         this.userRepository.create(new User());
+
+        // Check and create admin user
+        this.ensureAdminUser().catch((error) => {
+            console.error('Failed to ensure admin user:', error);
+        });
+    }
+
+    private async ensureAdminUser() {
+        const adminUsername = 'admin';
+        try {
+            let adminUser = await this.userRepository.findOneBy({ username: adminUsername });
+
+            if (!adminUser) {
+                adminUser = new User();
+                adminUser.username = adminUsername;
+                adminUser.password = await this.encryptService.encryptPassword('admin'); // Use a strong password
+                await this.userRepository.save(adminUser);
+                console.log('Admin user created');
+            }
+        } catch (error) {
+            // There will always be an error because of a
+        }
     }
 
     async getAllUsers() {
@@ -54,8 +76,7 @@ export class UserService {
         }
         //TODO: we only are using the user-id as an cookie because is is not clear yet if we are allowed to use jwt tokens
         const token = await this.authService.signIn(foundUser.id, foundUser.username);
-        console.log(token)
-        response.cookie('ttt-userid', foundUser.id)
+        response.cookie('ttt-userid', token)
 
         return UserInfoDTO.fromUser(foundUser)
     }
