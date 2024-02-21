@@ -7,6 +7,7 @@ import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
 import {CreateUserDTO} from "../../models/DTO/CreateUserDTO";
 import {LoginDTO} from "../../models/DTO/LoginDTO";
 import {response, Response} from "express";
+import {AuthService} from "../auth/auth.service";
 
 @Injectable()
 export class UserService {
@@ -16,6 +17,7 @@ export class UserService {
         private dataSource: DataSource,
         private reflector: Reflector,
         private encryptService: EncryptService,
+        private authService: AuthService
     ) {
         this.userRepository = dataSource.getRepository(User);
         this.userRepository.create(new User());
@@ -51,9 +53,15 @@ export class UserService {
             throw new HttpException("Username or Password is wrong", HttpStatus.NOT_FOUND);
         }
         //TODO: we only are using the user-id as an cookie because is is not clear yet if we are allowed to use jwt tokens
+        const token = await this.authService.signIn(foundUser.id, foundUser.username);
+        console.log(token)
         response.cookie('ttt-userid', foundUser.id)
 
         return UserInfoDTO.fromUser(foundUser)
+    }
+
+    async getUser(id: number): Promise<User> {
+        return this.userRepository.findOneBy({id})
     }
 
     async uploadImage(id: number, file: Express.Multer.File) {
@@ -69,7 +77,7 @@ export class UserService {
     }
 
     async getImage(id: number) {
-        let user = await this.userRepository.findOneBy({id});
+        const user = await this.userRepository.findOneBy({id});
         if (!user) {
             throw new NotFoundException(`User with ID '${id}' not found`);
         }

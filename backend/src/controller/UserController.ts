@@ -4,22 +4,21 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  NotFoundException, Param,
-  Post, Res, StreamableFile, UploadedFile,
+  Param,
+  Post, Res, SetMetadata, UploadedFile,
+  UseGuards,
   UseInterceptors
 } from "@nestjs/common";
 import { User } from "../models/db-models/User";
 import { CreateUserDTO } from "../models/DTO/CreateUserDTO";
 import { LoginDTO } from "../models/DTO/LoginDTO";
-import { AuthService } from "../services/auth/auth.service";
-import { AuthModule } from "../services/auth/auth.module";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
-import { OK } from "sqlite3";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { UserInfoDTO } from "../models/DTO/UserInfoDTO";
 import { UserService } from "../services/user/user.service";
-import {Builder} from "@nestjs/cli/lib/configuration";
+import {IsLoggedInGuard} from "../services/is-logged-in-guard/is-logged-in-guard.service";
+import {IsAdminGuard} from "../services/is-admin/is-admin-guard.service";
 
 
 @Controller("/api/v1/user")
@@ -28,13 +27,13 @@ export class UserController {
 
   constructor(
     private userService: UserService,
-    private authService: AuthService,
-    private authModule: AuthModule
   ) {
   }
 
   @Get("/all")
-  @ApiResponse({ status: OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
+  @UseGuards(IsAdminGuard)
+  @SetMetadata('roles', ['admin'])
+  @ApiResponse({ status: HttpStatus.OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
   @ApiResponse({ type: User, isArray: true})
   async getUsers(): Promise<UserInfoDTO[]> {
     return await this.userService.getAllUsers()
@@ -64,6 +63,7 @@ export class UserController {
   }
 
   @Post('/:id/upload-image')
+  @UseGuards(IsLoggedInGuard)
   @UseInterceptors(FileInterceptor('image'))
   @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: Response })
   async uploadImage(@Param('id') id: number,@UploadedFile() file: Express.Multer.File): Promise<Response> {
@@ -71,9 +71,10 @@ export class UserController {
   }
 
   @Get('/:id/image')
+  @UseGuards(IsLoggedInGuard)
   @ApiResponse({ status: 200, description: 'Image uploaded successfully', type: Buffer })
   async getImage(@Param('id') id: number, @Res() res) {
-    let image: Buffer = await this.userService.getImage(id);
+    const image: Buffer = await this.userService.getImage(id);
     res.type('image/jpeg');
     res.send(image);
   }
