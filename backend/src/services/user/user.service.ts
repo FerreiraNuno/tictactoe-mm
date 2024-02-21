@@ -1,5 +1,5 @@
 import {Reflector} from '@nestjs/core';
-import {HttpException, HttpStatus, Injectable, NotFoundException} from "@nestjs/common";
+import {HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException} from "@nestjs/common";
 import {DataSource, Repository} from "typeorm";
 import {User} from "../../models/db-models/User";
 import {EncryptService} from "../encrypt/encrypt.service";
@@ -8,6 +8,8 @@ import {CreateUserDTO} from "../../models/DTO/CreateUserDTO";
 import {LoginDTO} from "../../models/DTO/LoginDTO";
 import {response, Response} from "express";
 import {AuthService} from "../auth/auth.service";
+import {UpdateUserDTO} from "../../models/DTO/UpdateUserDTO";
+import * as buffer from "buffer";
 
 @Injectable()
 export class UserService {
@@ -21,28 +23,6 @@ export class UserService {
     ) {
         this.userRepository = dataSource.getRepository(User);
         this.userRepository.create(new User());
-
-        // Check and create admin user
-        this.ensureAdminUser().catch((error) => {
-            console.error('Failed to ensure admin user:', error);
-        });
-    }
-
-    private async ensureAdminUser() {
-        const adminUsername = 'admin';
-        try {
-            let adminUser = await this.userRepository.findOneBy({ username: adminUsername });
-
-            if (!adminUser) {
-                adminUser = new User();
-                adminUser.username = adminUsername;
-                adminUser.password = await this.encryptService.encryptPassword('admin'); // Use a strong password
-                await this.userRepository.save(adminUser);
-                console.log('Admin user created');
-            }
-        } catch (error) {
-            // There will always be an error because of a
-        }
     }
 
     async getAllUsers() {
@@ -62,6 +42,11 @@ export class UserService {
         newUser.username = user.username;
         newUser.password = await this.encryptService.encryptPassword(user.password);
         newUser = await this.userRepository.save(newUser);
+        if (newUser.id == 1) {
+            newUser.isAdmin = true;
+            newUser = await this.userRepository.save(newUser);
+            console.log(`first user '${newUser.username}' was create. so it got updated to being an admin user`)
+        }
         return UserInfoDTO.fromUser(newUser)
     }
 
@@ -85,6 +70,18 @@ export class UserService {
         return this.userRepository.findOneBy({id})
     }
 
+    async getUserByRequest(req: Request): Promise<User> {
+        const id = req.headers['user-id'];
+        if (!id) {
+            throw new UnauthorizedException("no user id provided")
+        }
+        const foundUser = await this.userRepository.findOneBy({id});
+        if (!foundUser) {
+            throw new UnauthorizedException("user not found")
+        }
+        return foundUser
+    }
+
     async uploadImage(id: number, file: Express.Multer.File) {
         let user = await this.userRepository.findOneBy({id});
         if (!user) {
@@ -104,5 +101,35 @@ export class UserService {
         }
 
         return user.image
+    }
+
+    async userExists(id: number): Promise<boolean> {
+        return await this.userRepository.exists({where: {id}});
+    }
+
+    checkUserInfo(username: string, password: string) {
+        if (password.length < 8 || password.length > 72) {
+            throw new HttpException("The password must be between 8 and 72 characters", HttpStatus.BAD_REQUEST);
+        }
+
+        if (username.length < 2 || username.length > 64) {
+            throw new HttpException("The username must be between 2 and 64 characters", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    async updateUser(id: number, user: UpdateUserDTO) {
+        const encryptedPassword = await this.encryptService.encryptPassword(user.password);
+        await this.userRepository.update({id: id}, {username: user.username, password: encryptedPassword});
+        const updatedUser = await this.getUser(id);
+        return UserInfoDTO.fromUser(updatedUser)
+    }
+
+    async isUserAdmin(userId: number): Promise<boolean> {
+        return await this.userRepository.exists({where: {id: userId, isAdmin: true}});
+    }
+
+    async setAdmin(id: number, booleanValue: boolean) {
+        const updateResult = await this.userRepository.update({id: id}, {isAdmin: booleanValue});
+        return updateResult.affected
     }
 }

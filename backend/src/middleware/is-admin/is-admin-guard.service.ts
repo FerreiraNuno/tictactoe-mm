@@ -1,24 +1,31 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { UserService } from "../user/user.service";
+import { UserService } from "../../services/user/user.service";
+import {AuthService} from "../../services/auth/auth.service";
 
 @Injectable()
 export class IsAdminGuard implements CanActivate {
-  constructor(private userService: UserService) {}
+  constructor(
+      private userService: UserService,
+      private authService: AuthService
+  ) {}
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest();
-    const userId = request.headers['ttt-userid'];
-    if (!userId) {
+    const jwtToken = request.cookies['ttt-userid'];
+    if (!jwtToken) {
       throw new UnauthorizedException('User ID is required');
     }
 
-    return this.userService.getUser(Number(userId)).then(user => {
-      if (!user || !user.isAdmin) {
+    return this.authService.getUserId(jwtToken).then(async userId => {
+      const user = await this.userService.isUserAdmin(userId);
+      if (!user) {
         throw new UnauthorizedException('Access denied');
       }
 
+      request.headers['user-id'] = userId
       return true;
     })
+
   }
 }

@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'
+import {Injectable} from '@nestjs/common';
+import {JwtService} from '@nestjs/jwt'
+
 @Injectable()
 export class AuthService {
 
@@ -9,6 +10,15 @@ export class AuthService {
     }
 
     async signIn(id: number, username: string) {
-        return await this.jwtService.signAsync({username:username, sub: id})
+        return await this.jwtService.signAsync({username: username, sub: id})
+    }
+
+    async getUserId(jwtToken: string) {
+        const decoded = this.jwtService.verify(jwtToken);
+        if (decoded.sub && !isNaN(Number(decoded.sub))) {
+            return Number(decoded.sub);
+        } else {
+            throw new Error('UserId not found or invalid in the token');
+        }
     }
 }
