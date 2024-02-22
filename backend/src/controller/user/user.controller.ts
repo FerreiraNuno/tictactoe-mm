@@ -9,17 +9,17 @@ import {
     UseGuards,
     UseInterceptors
 } from "@nestjs/common";
-import {User} from "../models/db-models/User";
-import {CreateUserDTO} from "../models/DTO/CreateUserDTO";
-import {LoginDTO} from "../models/DTO/LoginDTO";
+import {User} from "../../models/db-models/User";
+import {CreateUserDTO} from "../../models/DTO/CreateUserDTO";
+import {LoginDTO} from "../../models/DTO/LoginDTO";
 import {ApiResponse, ApiTags} from "@nestjs/swagger";
 import {FileInterceptor} from "@nestjs/platform-express";
 import {Response} from "express";
-import {UserInfoDTO} from "../models/DTO/UserInfoDTO";
-import {UserService} from "../services/user/user.service";
-import {IsLoggedInGuard} from "../middleware/is-logged-in-guard/is-logged-in-guard.service";
-import {IsAdminGuard} from "../middleware/is-admin/is-admin-guard.service";
-import {UpdateUserDTO} from "../models/DTO/UpdateUserDTO";
+import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
+import {UserService} from "../../services/user/user.service";
+import {IsLoggedInGuard} from "../../middleware/is-logged-in-guard/is-logged-in-guard.service";
+import {IsAdminGuard} from "../../middleware/is-admin/is-admin-guard.service";
+import {UpdateUserDTO} from "../../models/DTO/UpdateUserDTO";
 import {OK} from "sqlite3";
 import {isNumber} from "@nestjs/common/utils/shared.utils";
 
@@ -36,7 +36,6 @@ export class UserController {
     @Get("/all")
     @ApiResponse({status: HttpStatus.OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
     @UseGuards(IsAdminGuard)
-    @ApiResponse({type: User, isArray: true})
     async getUsers(): Promise<UserInfoDTO[]> {
         return await this.userService.getAllUsers()
     }
@@ -71,7 +70,7 @@ export class UserController {
     })
     @ApiResponse({
         type: UserInfoDTO,
-        description: "After a successful login a 'ttt-userid' cookie will be set to identify the user for future requests",
+        description: "After a successful login a 'game-userid' cookie will be set to identify the user for future requests",
         status: HttpStatus.OK
     })
     async login(@Body() user: LoginDTO, @Res({passthrough: true}) response: Response): Promise<UserInfoDTO> {

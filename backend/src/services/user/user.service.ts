@@ -9,7 +9,6 @@ import {LoginDTO} from "../../models/DTO/LoginDTO";
 import {response, Response} from "express";
 import {AuthService} from "../auth/auth.service";
 import {UpdateUserDTO} from "../../models/DTO/UpdateUserDTO";
-import * as buffer from "buffer";
 
 @Injectable()
 export class UserService {
@@ -61,8 +60,8 @@ export class UserService {
         }
         //TODO: we only are using the user-id as an cookie because is is not clear yet if we are allowed to use jwt tokens
         const token = await this.authService.signIn(foundUser.id, foundUser.username);
-        response.cookie('ttt-userid', token)
-
+        response.cookie('game-userid', token)
+        response.status(HttpStatus.OK)
         return UserInfoDTO.fromUser(foundUser)
     }
 

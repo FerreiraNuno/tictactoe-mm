@@ -17,6 +17,12 @@ export class User {
   @Column({ default: 1000, nullable: false})
   mmr: number;
 
+  @Column({ default: 0, nullable: false})
+  losts: number;
+
+  @Column({ default: 0, nullable: false})
+  wins: number;
+
   @Column({ type:'blob', nullable: true })
   image: Buffer;
 }

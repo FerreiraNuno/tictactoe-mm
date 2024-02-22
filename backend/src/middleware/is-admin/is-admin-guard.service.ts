@@ -12,7 +12,7 @@ export class IsAdminGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest();
-    const jwtToken = request.cookies['ttt-userid'];
+    const jwtToken = request.cookies['game-userid'];
     if (!jwtToken) {
       throw new UnauthorizedException('User ID is required');
     }
