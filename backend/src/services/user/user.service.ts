@@ -14,6 +14,8 @@ import {UpdateUserDTO} from "../../models/DTO/UpdateUserDTO";
 export class UserService {
     private readonly userRepository: Repository<User>;
 
+    private readonly eloFactor: number = 20;
+
     constructor(
         private dataSource: DataSource,
         private reflector: Reflector,
@@ -130,5 +132,19 @@ export class UserService {
     async setAdmin(id: number, booleanValue: boolean) {
         const updateResult = await this.userRepository.update({id: id}, {isAdmin: booleanValue});
         return updateResult.affected
+    }
+
+    async updateWinLostCount(id: number, hasWon: boolean) {
+        const columnName = hasWon ? "wins" : "losts";
+        return await this.userRepository.increment({id: id}, columnName, 1)
+    }
+
+    async updateUserRating(id: number, rating: number,) {
+        return await this.userRepository.update({id: id}, {mmr: rating});
+    }
+
+    calculateNewEloRating(currentRating: number, opponentRating: number, score: number): number {
+        const expectedScore: number = 1 / (1 + Math.pow(10, (opponentRating - currentRating) / 400));
+        return currentRating + this.eloFactor * (score - expectedScore);
     }
 }

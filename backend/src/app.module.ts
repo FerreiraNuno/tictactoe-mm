@@ -9,6 +9,7 @@ import {AuthService} from "./services/auth/auth.service";
 import {AuthModule} from "./services/auth/auth.module";
 import {GameService} from "./services/game/game.service";
 import {GameGateway} from "./gateway/game/game.gateway";
+import {GameResult} from "./models/db-models/GameResult";
 
 @Module({
     providers: [
@@ -17,6 +18,8 @@ import {GameGateway} from "./gateway/game/game.gateway";
         AuthService,
         GameService,
         GameGateway,
+        Map,
+        Set,
         Array
     ],
     imports: [
@@ -27,7 +30,7 @@ import {GameGateway} from "./gateway/game/game.gateway";
         TypeOrmModule.forRoot({
             type: "sqlite",
             database: "./db.sqlite",
-            entities: [User],
+            entities: [User, GameResult],
             synchronize: true
         }),
     ],

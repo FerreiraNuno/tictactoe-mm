@@ -6,7 +6,6 @@ import {
     WebSocketServer
 } from '@nestjs/websockets';
 import {Server} from 'socket.io';
-import {parse} from 'cookie';
 import { UserService } from 'src/services/user/user.service';
 import {AuthService} from "../../services/auth/auth.service";
 import {UnauthorizedException} from "@nestjs/common";
@@ -40,8 +39,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     handleDisconnect(client: any) {
+        const connection = this.gameService.getConnectionByClient(client);
         this.gameService.removeConnection(client)
-        console.log(`Client disconnected: ${client.id}`);
+        console.log(`Client disconnected: ${client.id} - User ${connection.user.username}`);
+
     }
 
     @SubscribeMessage('message')
@@ -51,8 +52,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('search')
-    handleSearch(client: any, payload: string): void {
-        console.log(payload)
-        this.server.emit('message', payload);
+    handleSearch(client: any): void {
+        this.gameService.addToSearch(client)
     }
 }
