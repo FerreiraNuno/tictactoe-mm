@@ -82,8 +82,11 @@ export class GameService {
         this.inSearchQueue.delete(connection)
 
         const game = new Game(connection, opponentPlayer);
-        //TODO check if number is already in use
-        const gameId = Math.random();
+        let gameId: number
+        do {
+            gameId = Math.floor(Math.random() * 10000) + 1;
+        } while (this.games.has(gameId))
+
         this.games.set(gameId, game)
 
 
@@ -94,8 +97,8 @@ export class GameService {
         gameDTO.player2Username = opponentPlayer.user.username
         gameDTO.currentUsername = game.getActivePlayerName()
         gameDTO.field = game.getField()
-        connection.client.emit("game.new", gameDTO) //Finds player 1 || Player 2
-        opponentPlayer.client.emit("game.new", gameDTO) //Finds player 2 || Player 1
+        connection.client.emit("game.new", gameDTO)
+        opponentPlayer.client.emit("game.new", gameDTO)
     }
 
     private searchForPartner(connection: WSConnection) {

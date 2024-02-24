@@ -39,6 +39,7 @@ export class Game {
         return this.field
     }
 
+    // Check for full board
     checkForWin(): WSConnection | null {
         // Check rows
         for (let row = 0; row < 3; row++) {
