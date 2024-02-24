@@ -2,10 +2,9 @@ import {
     Body,
     Controller,
     Get,
-    HttpException,
     HttpStatus, NotFoundException,
     Param,
-    Post, Put, Req, Res, SetMetadata, UnauthorizedException, UploadedFile,
+    Post, Put, Req, Res, UnauthorizedException, UploadedFile,
     UseGuards,
     UseInterceptors
 } from "@nestjs/common";
@@ -20,9 +19,6 @@ import {UserService} from "../../services/user/user.service";
 import {IsLoggedInGuard} from "../../middleware/is-logged-in-guard/is-logged-in-guard.service";
 import {IsAdminGuard} from "../../middleware/is-admin/is-admin-guard.service";
 import {UpdateUserDTO} from "../../models/DTO/UpdateUserDTO";
-import {OK} from "sqlite3";
-import {isNumber} from "@nestjs/common/utils/shared.utils";
-
 
 @Controller("/api/v1/user")
 @ApiTags('user')

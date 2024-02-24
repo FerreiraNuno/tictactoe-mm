@@ -1,32 +1,26 @@
 import {BadRequestException, Injectable, UnauthorizedException} from '@nestjs/common';
 import {Game} from "../../models/Game";
 import {User} from "../../models/db-models/User";
-import {UserService} from "../user/user.service"
 import {parse} from "cookie";
 import {AuthService} from "../auth/auth.service";
 import {WSConnection} from "../../models/WSConnection";
+import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
+import {Socket} from "socket.io";
+import {GameEndDTO} from "../../models/DTO/GameEndDTO";
+import {GameStatusDTO} from "../../models/DTO/GameStatusDTO";
 
 @Injectable()
 export class GameService {
 
     constructor(
-        private games: Game[],
+        private games: Map<number, Game>,
         private inSearchQueue: Set<WSConnection>,
         private wsConnections: Map<string, WSConnection>,
-        private userService: UserService,
         private authService: AuthService
     ) {
     }
 
-    // async searchForGame(userId: string) {
-    //     const user = await this.userService.getUser(Number(userId));
-    //     this.checkForPartner(user)
-    // }
-    //
-    //     private checkForPartner(user: User) {
-    //
-    //     }
-    async getUserId(client: any): Promise<number> {
+    async getUserId(client: Socket): Promise<number> {
         const cookies = client.handshake.headers.cookie;
         if (!cookies) {
             throw new UnauthorizedException("no user cookie found")
@@ -61,16 +55,17 @@ export class GameService {
         }
     }
 
-    private getClientId(client: any): string {
+    private getClientId(client: Socket): string {
         return client.id;
     }
 
-    getConnectionByClient(client: any) {
+    getConnectionByClient(client: Socket) {
         const clientId = this.getClientId(client);
         return this.wsConnections.get(clientId)
     }
 
-    addToSearch(client: any) {
+    //TODO: Change search to cronjob (maybe buckets?)
+    addToSearch(client: Socket) {
         const connection: WSConnection = this.getConnectionByClient(client);
         if (this.inSearchQueue.has(connection)) {
             throw new BadRequestException("already in search queue");
@@ -85,6 +80,22 @@ export class GameService {
         this.inSearchQueue.delete(opponentPlayer)
         //just in case the user was already in the search queue
         this.inSearchQueue.delete(connection)
+
+        const game = new Game(connection, opponentPlayer);
+        //TODO check if number is already in use
+        const gameId = Math.random();
+        this.games.set(gameId, game)
+
+
+        //TODO send all info about user
+        const gameDTO = new GameStatusDTO();
+        gameDTO.gameId = gameId
+        gameDTO.player1Username = connection.user.username
+        gameDTO.player2Username = opponentPlayer.user.username
+        gameDTO.currentUsername = game.getActivePlayerName()
+        gameDTO.field = game.getField()
+        connection.client.emit("game.new", gameDTO) //Finds player 1 || Player 2
+        opponentPlayer.client.emit("game.new", gameDTO) //Finds player 2 || Player 1
     }
 
     private searchForPartner(connection: WSConnection) {
@@ -99,5 +110,34 @@ export class GameService {
             }
         }
         return null;
+    }
+
+    makeMove(client: Socket, payload: MakeMoveDTO) {
+        const game = this.games.get(payload.gameId);
+        const wsConnection = this.wsConnections.get(client.id);
+        if (!game.isUserInGame(wsConnection)) {
+            throw new UnauthorizedException("you are not allowed to make a move in this game")
+        }
+        game.makeMove(payload.xPos, payload.yPos, wsConnection);
+
+        const gameUpdateDTO = new GameStatusDTO();
+        gameUpdateDTO.gameId = payload.gameId
+        gameUpdateDTO.currentUsername = game.getActivePlayerName()
+        gameUpdateDTO.player1Username = game.player1.user.username
+        gameUpdateDTO.player2Username = game.player2.user.username
+        gameUpdateDTO.field = game.getField()
+        game.player1.client.emit("game.update", gameUpdateDTO)
+        game.player2.client.emit("game.update", gameUpdateDTO)
+
+        const winner = game.checkForWin();
+        if (winner) {
+            const winMessageDTO: GameEndDTO = new GameEndDTO()
+            winMessageDTO.gameId = payload.gameId
+            winMessageDTO.winner = winner.user.username
+            game.player1.client.emit("game.end", winMessageDTO)
+            game.player2.client.emit("game.end", winMessageDTO)
+            //TODO Save GameResult and calculate new elo for both players
+            this.games.delete(payload.gameId)
+        }
     }
 }

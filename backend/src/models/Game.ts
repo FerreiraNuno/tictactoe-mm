@@ -1,10 +1,5 @@
 import {WSConnection} from "./WSConnection";
-
-enum FieldStatus {
-    Empty = 0,
-    P1 = 1,
-    P2 = 2,
-}
+import {FieldStatus} from "./FieldStatus";
 
 export class Game {
 
@@ -13,18 +8,35 @@ export class Game {
         [0, 0, 0],
         [0, 0, 0]
     ]
+    private isPlayer1Turn: boolean
 
     constructor(
-        private player1: WSConnection,
-        private player2: WSConnection,
-        private isPlayer1Turn: boolean,
-        private server: WebSocket
+        public player1: WSConnection,
+        public player2: WSConnection
     ) {
         this.isPlayer1Turn = Math.random() % 1 == 0
     }
 
-    makeMove(x: number, y: number, userId: number) {
-        this.field[x][y] = userId === this.player1.user.id ? FieldStatus.P1 : FieldStatus.P2
+    makeMove(x: number, y: number, user: WSConnection) {
+        if (this.player1 == user && !this.isPlayer1Turn || this.player2 == user && this.isPlayer1Turn) {
+            return false
+        }
+
+        if (x < 0 || x >= this.field.length || y < 0 || y >= this.field.length) {
+            return false
+        }
+
+        if (this.field[x][y] != FieldStatus.Empty) {
+            return false
+        }
+
+        this.field[x][y] = user.user.id === this.player1.user.id ? FieldStatus.P1 : FieldStatus.P2
+        this.isPlayer1Turn = !this.isPlayer1Turn;
+        return true;
+    }
+
+    getField() {
+        return this.field
     }
 
     checkForWin(): WSConnection | null {
@@ -52,5 +64,13 @@ export class Game {
 
         // No win found
         return null;
+    }
+
+    getActivePlayerName() {
+        return this.isPlayer1Turn ? this.player1.user.username : this.player2.user.username;
+    }
+
+    isUserInGame(connection: WSConnection) {
+        return this.player1.client == connection.client || this.player2.client == connection.client;
     }
 }

@@ -1,5 +1,4 @@
 import {Column, Entity, PrimaryGeneratedColumn} from "typeorm";
-import {EndResult} from "./EndResult";
 
 @Entity()
 export class GameResult {
@@ -14,10 +13,8 @@ export class GameResult {
     player2: number;
 
     @Column({
-        type: "enum",
-        enum: EndResult,
-        default: EndResult.CANCELED
+        type: String
     })
-    result: EndResult;
+    result: string;
 
 }
