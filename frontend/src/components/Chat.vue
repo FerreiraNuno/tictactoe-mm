@@ -88,7 +88,6 @@ const sendMessage = async () => {
     height: 100%;
     border-radius: 10px;
     overflow: hidden;
-    background-color: #ca1313;
 }
 
 h2 {
@@ -117,7 +116,7 @@ h3 {
     display: flex;
     align-items: center;
     position: relative;
-    background: #f9f9f9;
+    background: #ffffff;
     padding-right: 50px;
 }
 
@@ -189,7 +188,7 @@ button {
 #chat-window {
     flex-grow: 1;
     overflow-y: auto;
-    background: #f9f9f9;
+    background: #ffffff;
     padding: 10px;
 }
 
