@@ -8,6 +8,7 @@ import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
 import {Socket} from "socket.io";
 import {GameEndDTO} from "../../models/DTO/GameEndDTO";
 import {GameStatusDTO} from "../../models/DTO/GameStatusDTO";
+import { UserService } from "../user/user.service";
 
 @Injectable()
 export class GameService {
@@ -16,7 +17,8 @@ export class GameService {
         private games: Map<number, Game>,
         private inSearchQueue: Set<WSConnection>,
         private wsConnections: Map<string, WSConnection>,
-        private authService: AuthService
+        private authService: AuthService,
+        private userService: UserService
     ) {
     }
 
@@ -90,11 +92,13 @@ export class GameService {
         this.games.set(gameId, game)
 
 
-        //TODO send all info about user
+        //TODO send all info about user <- Only MMR is needed to be displayed. Is added
         const gameDTO = new GameStatusDTO();
         gameDTO.gameId = gameId
         gameDTO.player1Username = connection.user.username
         gameDTO.player2Username = opponentPlayer.user.username
+        gameDTO.player1mmr = connection.user.mmr;
+        gameDTO.player2mmr = opponentPlayer.user.mmr;
         gameDTO.currentUsername = game.getActivePlayerName()
         gameDTO.field = game.getField()
         connection.client.emit("game.new", gameDTO)
@@ -132,6 +136,8 @@ export class GameService {
         game.player1.client.emit("game.update", gameUpdateDTO)
         game.player2.client.emit("game.update", gameUpdateDTO)
 
+        //TODO Add Game TIE if Field is full
+
         const winner = game.checkForWin();
         if (winner) {
             const winMessageDTO: GameEndDTO = new GameEndDTO()
@@ -139,7 +145,30 @@ export class GameService {
             winMessageDTO.winner = winner.user.username
             game.player1.client.emit("game.end", winMessageDTO)
             game.player2.client.emit("game.end", winMessageDTO)
-            //TODO Save GameResult and calculate new elo for both players
+
+            const playerLost = game.player1.user.id !== winner.user.id ? game.player1 : game.player2
+
+
+            //TODO Save GameResult and calculate new elo for both players <- Check if works!
+            winner.user.mmr = this.userService.calculateNewEloRating(winner.user.mmr,playerLost.user.mmr,1)
+            //Update User Rating of winner
+
+            playerLost.user.mmr = this.userService.calculateNewEloRating(playerLost.user.mmr,winner.user.mmr,0)
+            // Update loosing Players Rating
+
+
+            //TODO Check for Async/Await call. Might Update User Rating too soon.
+            this.userService.updateUserRating(winner.user.id,winner.user.mmr)
+            //Update the Value in Database for winner of the match
+
+            this.userService.updateUserRating(playerLost.user.id,playerLost.user.mmr)
+            //Update the Value in Database for Looser of the match
+
+            this.userService.updateWinLostCount(winner.user.id,true)
+            this.userService.updateWinLostCount(playerLost.user.id,false)
+            //increment win and loose counter for both players
+
+
             this.games.delete(payload.gameId)
         }
     }
