@@ -1,14 +1,15 @@
-import {BadRequestException, Injectable, UnauthorizedException} from '@nestjs/common';
-import {Game} from "../../models/Game";
-import {User} from "../../models/db-models/User";
-import {parse} from "cookie";
-import {AuthService} from "../auth/auth.service";
-import {WSConnection} from "../../models/WSConnection";
-import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
-import {Socket} from "socket.io";
-import {GameEndDTO} from "../../models/DTO/GameEndDTO";
-import {GameStatusDTO} from "../../models/DTO/GameStatusDTO";
+import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { Game } from "../../models/Game";
+import { User } from "../../models/db-models/User";
+import { parse } from "cookie";
+import { AuthService } from "../auth/auth.service";
+import { WSConnection } from "../../models/WSConnection";
+import { MakeMoveDTO } from "../../models/DTO/MakeMoveDTO";
+import { Socket } from "socket.io";
+import { GameEndDTO } from "../../models/DTO/GameEndDTO";
+import { GameStatusDTO } from "../../models/DTO/GameStatusDTO";
 import { UserService } from "../user/user.service";
+import { GameEndStatusDTO } from "../../models/DTO/GameEndStatusDTO";
 
 @Injectable()
 export class GameService {
@@ -136,7 +137,6 @@ export class GameService {
         game.player1.client.emit("game.update", gameUpdateDTO)
         game.player2.client.emit("game.update", gameUpdateDTO)
 
-        //TODO Add Game TIE if Field is full
 
         const winner = game.checkForWin();
         if (winner) {
@@ -147,7 +147,6 @@ export class GameService {
             game.player2.client.emit("game.end", winMessageDTO)
 
             const playerLost = game.player1.user.id !== winner.user.id ? game.player1 : game.player2
-
 
             //TODO Save GameResult and calculate new elo for both players <- Check if works!
             winner.user.mmr = this.userService.calculateNewEloRating(winner.user.mmr,playerLost.user.mmr,1)
@@ -164,12 +163,15 @@ export class GameService {
             this.userService.updateUserRating(playerLost.user.id,playerLost.user.mmr)
             //Update the Value in Database for Looser of the match
 
-            this.userService.updateWinLostCount(winner.user.id,true)
-            this.userService.updateWinLostCount(playerLost.user.id,false)
+            this.userService.updateWinLostCount(winner.user.id,GameEndStatusDTO.WIN)
+            this.userService.updateWinLostCount(playerLost.user.id,GameEndStatusDTO.LOOSE)
             //increment win and loose counter for both players
 
 
             this.games.delete(payload.gameId)
+        }
+        if (game.isFieldFull()){
+            //TODO Add how to handle when Field is full but no one won
         }
     }
 }

@@ -1,14 +1,15 @@
-import {Reflector} from '@nestjs/core';
-import {HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException} from "@nestjs/common";
-import {DataSource, Repository} from "typeorm";
-import {User} from "../../models/db-models/User";
-import {EncryptService} from "../encrypt/encrypt.service";
-import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
-import {CreateUserDTO} from "../../models/DTO/CreateUserDTO";
-import {LoginDTO} from "../../models/DTO/LoginDTO";
-import {response, Response} from "express";
-import {AuthService} from "../auth/auth.service";
-import {UpdateUserDTO} from "../../models/DTO/UpdateUserDTO";
+import { Reflector } from "@nestjs/core";
+import { HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { DataSource, Repository } from "typeorm";
+import { User } from "../../models/db-models/User";
+import { EncryptService } from "../encrypt/encrypt.service";
+import { UserInfoDTO } from "../../models/DTO/UserInfoDTO";
+import { CreateUserDTO } from "../../models/DTO/CreateUserDTO";
+import { LoginDTO } from "../../models/DTO/LoginDTO";
+import { response, Response } from "express";
+import { AuthService } from "../auth/auth.service";
+import { UpdateUserDTO } from "../../models/DTO/UpdateUserDTO";
+import { GameEndStatusDTO } from "../../models/DTO/GameEndStatusDTO";
 
 @Injectable()
 export class UserService {
@@ -134,8 +135,11 @@ export class UserService {
         return updateResult.affected
     }
 
-    async updateWinLostCount(id: number, hasWon: boolean) {
-        const columnName = hasWon ? "wins" : "losts";
+    async updateWinLostCount(id: number, hasWon: GameEndStatusDTO) { //TODO Check TIE function
+        const columnName = hasWon===GameEndStatusDTO.WIN ? "wins" : "losts";
+        if (hasWon === GameEndStatusDTO.TIE) {
+            return
+        }
         return await this.userRepository.increment({id: id}, columnName, 1)
     }
 
