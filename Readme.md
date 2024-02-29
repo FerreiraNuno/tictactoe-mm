@@ -21,7 +21,7 @@ To start the Vue frontend, follow these steps:
     npm run dev
     ```
 
-    The Vue frontend will be accessible at the localhost url.
+   The Vue frontend will be accessible at the localhost url.
 
 ## Backend
 
@@ -33,4 +33,15 @@ To start the backend, follow these steps:
     cd backend
     ```
 
-Backend to be implemented
+2. Install the dependencies by running:
+
+    ```bash
+    npm install
+    ```
+
+3. Run the projekt by entering the following command:
+
+   ```bash
+   nest start --watch
+   ```
+       
