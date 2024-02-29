@@ -3,7 +3,7 @@ import {
     WebSocketGateway,
     OnGatewayConnection,
     OnGatewayDisconnect,
-    WebSocketServer
+    WebSocketServer, OnGatewayInit
 } from '@nestjs/websockets';
 import {Server, Socket} from 'socket.io';
 import {UserService} from 'src/services/user/user.service';
@@ -17,7 +17,7 @@ import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
         origin: '*',
     },
 })
-export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
     @WebSocketServer()
     server: Server;
 
@@ -25,7 +25,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         private userService: UserService,
         private authService: AuthService,
         private gameService: GameService
-    ) {
+    ) { }
+
+    afterInit(server: any) {
+        this.gameService.setServer(server)
     }
 
     handleConnection(client: Socket, ...args: any[]) {
@@ -46,9 +49,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     }
 
+    @SubscribeMessage('queue-list')
+    getPeopleInQueue(client: Socket) {
+        const ws = this.gameService.getConnectionByClient(client);
+        if (!ws.user.isAdmin) {
+            throw new UnauthorizedException('only admins are allowed to view the queue')
+        }
+
+        return this.gameService.getUserInQueue()
+    }
+
     @SubscribeMessage('message')
     handleMessage(client: Socket, payload: string): void {
-        console.log(payload)
         this.server.emit('message', payload);
     }
 

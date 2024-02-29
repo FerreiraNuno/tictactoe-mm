@@ -1,18 +1,20 @@
-import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
-import { Game } from "../../models/Game";
-import { User } from "../../models/db-models/User";
-import { parse } from "cookie";
-import { AuthService } from "../auth/auth.service";
-import { WSConnection } from "../../models/WSConnection";
-import { MakeMoveDTO } from "../../models/DTO/MakeMoveDTO";
-import { Socket } from "socket.io";
-import { GameEndDTO } from "../../models/DTO/GameEndDTO";
-import { GameStatusDTO } from "../../models/DTO/GameStatusDTO";
-import { UserService } from "../user/user.service";
-import { GameEndStatusDTO } from "../../models/DTO/GameEndStatusDTO";
+import {BadRequestException, Injectable, UnauthorizedException} from "@nestjs/common";
+import {Game} from "../../models/Game";
+import {User} from "../../models/db-models/User";
+import {parse} from "cookie";
+import {AuthService} from "../auth/auth.service";
+import {WSConnection} from "../../models/WSConnection";
+import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
+import {Server, Socket} from "socket.io";
+import {GameEndDTO} from "../../models/DTO/GameEndDTO";
+import {GameStatusDTO} from "../../models/DTO/GameStatusDTO";
+import {UserService} from "../user/user.service";
+import {GameEndStatusDTO} from "../../models/DTO/GameEndStatusDTO";
+import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
 
 @Injectable()
 export class GameService {
+    private server: Server;
 
     constructor(
         private games: Map<number, Game>,
@@ -77,12 +79,15 @@ export class GameService {
         const opponentPlayer = this.searchForPartner(connection)
         if (!opponentPlayer) {
             this.inSearchQueue.add(connection)
+            this.server.emit("search.count", {'count': this.inSearchQueue.size})
             return
         }
 
         this.inSearchQueue.delete(opponentPlayer)
         //just in case the user was already in the search queue
         this.inSearchQueue.delete(connection)
+
+        this.server.emit("search.count", {'count': this.inSearchQueue.size})
 
         const game = new Game(connection, opponentPlayer);
         let gameId: number
@@ -149,29 +154,46 @@ export class GameService {
             const playerLost = game.player1.user.id !== winner.user.id ? game.player1 : game.player2
 
             //TODO Save GameResult and calculate new elo for both players <- Check if works!
-            winner.user.mmr = this.userService.calculateNewEloRating(winner.user.mmr,playerLost.user.mmr,1)
+            winner.user.mmr = this.userService.calculateNewEloRating(winner.user.mmr, playerLost.user.mmr, 1)
             //Update User Rating of winner
 
-            playerLost.user.mmr = this.userService.calculateNewEloRating(playerLost.user.mmr,winner.user.mmr,0)
+            playerLost.user.mmr = this.userService.calculateNewEloRating(playerLost.user.mmr, winner.user.mmr, 0)
             // Update loosing Players Rating
 
 
             //TODO Check for Async/Await call. Might Update User Rating too soon.
-            this.userService.updateUserRating(winner.user.id,winner.user.mmr)
+            this.userService.updateUserRating(winner.user.id, winner.user.mmr)
             //Update the Value in Database for winner of the match
 
-            this.userService.updateUserRating(playerLost.user.id,playerLost.user.mmr)
+            this.userService.updateUserRating(playerLost.user.id, playerLost.user.mmr)
             //Update the Value in Database for Looser of the match
 
-            this.userService.updateWinLostCount(winner.user.id,GameEndStatusDTO.WIN)
-            this.userService.updateWinLostCount(playerLost.user.id,GameEndStatusDTO.LOOSE)
+            this.userService.updateWinLostCount(winner.user.id, GameEndStatusDTO.WIN)
+            this.userService.updateWinLostCount(playerLost.user.id, GameEndStatusDTO.LOOSE)
             //increment win and loose counter for both players
 
 
             this.games.delete(payload.gameId)
         }
-        if (game.isFieldFull()){
+        if (game.isFieldFull()) {
             //TODO Add how to handle when Field is full but no one won
         }
+    }
+
+    getUserInQueue() {
+        const userList: UserInfoDTO[] = []
+        for (const ws of this.inSearchQueue) {
+            userList.push(UserInfoDTO.fromUser(ws.user))
+        }
+
+        return userList
+    }
+
+    getUserInQueueCount() {
+        return this.inSearchQueue.size
+    }
+
+    setServer(server: Server) {
+        this.server = server
     }
 }
