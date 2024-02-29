@@ -33,8 +33,7 @@ const changePassword = () => {
 };
 
 //Hochladen des Profilbilds
-const uploadProfilePicture = (event) => {
-  const file = event.target.files[0];
+const uploadProfilePicture = () => {
   // TBD
 };
 </script>

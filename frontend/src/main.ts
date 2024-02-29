@@ -9,7 +9,7 @@ import LoginModal from "./components/LoginModal.vue";
 import RegisterModal from "./components/RegisterModal.vue";
 import GameView from "./components/GameView.vue";
 import Profile from "@/components/Profile.vue";
-import ProfileEdit from "@/components/Profile.vue";
+
 
 const router = createRouter({
     history: createWebHistory(),
