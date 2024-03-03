@@ -17,4 +17,8 @@ export class GameResultService {
     async addResult(result: GameResult) {
         await this.resultRepository.save(result)
     }
+
+    async getUserMatchesOfUser(userid: number) {
+        return await this.resultRepository.findBy({player1: userid} || {player2: userid})
+    }
 }

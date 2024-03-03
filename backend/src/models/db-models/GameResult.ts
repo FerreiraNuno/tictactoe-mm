@@ -10,7 +10,13 @@ export class GameResult {
     player1: number;
 
     @Column()
+    player1mmr: number;
+
+    @Column()
     player2: number;
+
+    @Column()
+    player2mmr: number;
 
     @Column({
         type: String
