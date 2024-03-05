@@ -36,6 +36,14 @@ export class UserController {
         return await this.userService.getAllUsers()
     }
 
+    @Get("/:id")
+    @ApiResponse({status: HttpStatus.OK, description: 'Returns users info of a requested user', type: UserInfoDTO, isArray: false})
+    @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found'})
+    @UseGuards(IsLoggedInGuard)
+    async getSpecificUser(@Param("id") id: number): Promise<UserInfoDTO> {
+        return await this.userService.getUsersById(id)
+    }
+
     @Put("/:id/set-admin/:booleanValue")
     @UseGuards(IsAdminGuard)
     @ApiResponse({status: HttpStatus.OK, description: 'Set a users admin status to true or false'})

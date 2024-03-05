@@ -151,4 +151,12 @@ export class UserService {
         const expectedScore: number = 1 / (1 + Math.pow(10, (opponentRating - currentRating) / 400));
         return currentRating + this.eloFactor * (score - expectedScore);
     }
+
+    async getUsersById(id: number) {
+        const user = await this.userRepository.findOneBy({id: id});
+        if (!user) {
+            throw new HttpException("User not found", HttpStatus.NOT_FOUND)
+        }
+        return UserInfoDTO.fromUser(user);
+    }
 }

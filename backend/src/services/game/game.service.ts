@@ -1,19 +1,19 @@
-import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
-import { Game } from "../../models/Game";
-import { User } from "../../models/db-models/User";
-import { parse } from "cookie";
-import { AuthService } from "../auth/auth.service";
-import { WSConnection } from "../../models/WSConnection";
-import { MakeMoveDTO } from "../../models/DTO/MakeMoveDTO";
-import { Server, Socket } from "socket.io";
-import { GameEndDTO } from "../../models/DTO/GameEndDTO";
-import { GameStatusDTO } from "../../models/DTO/GameStatusDTO";
-import { UserService } from "../user/user.service";
-import { GameEndStatusDTO } from "../../models/DTO/GameEndStatusDTO";
-import { UserInfoDTO } from "../../models/DTO/UserInfoDTO";
-import { GameResultService } from "../game-result/game-result.service";
-import { GameResult } from "../../models/db-models/GameResult";
-import { EndResult } from "../../models/db-models/EndResult";
+import {BadRequestException, Injectable, UnauthorizedException} from "@nestjs/common";
+import {Game} from "../../models/Game";
+import {User} from "../../models/db-models/User";
+import {parse} from "cookie";
+import {AuthService} from "../auth/auth.service";
+import {WSConnection} from "../../models/WSConnection";
+import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
+import {Server, Socket} from "socket.io";
+import {GameEndDTO} from "../../models/DTO/GameEndDTO";
+import {GameStatusDTO} from "../../models/DTO/GameStatusDTO";
+import {UserService} from "../user/user.service";
+import {GameEndStatusDTO} from "../../models/DTO/GameEndStatusDTO";
+import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
+import {GameResultService} from "../game-result/game-result.service";
+import {GameResult} from "../../models/db-models/GameResult";
+import {EndResult} from "../../models/db-models/EndResult";
 
 @Injectable()
 export class GameService {
@@ -158,22 +158,22 @@ export class GameService {
             const playerLost = game.player1.user.id === winner.user.id ? game.player1 : game.player2
 
             //TODO Save GameResult and calculate new elo for both players <- Check if works!
-            await this.endMatchPlayerWon(winner,playerLost)
+            await this.endMatchPlayerWon(winner, playerLost)
 
             const endResult = game.player1.user.id === winner.user.id ? EndResult.PLAYER_1 : EndResult.PLAYER_2
-            await this.saveGameRating(winner,playerLost,endResult)
+            await this.saveGameRating(winner, playerLost, endResult)
 
             this.games.delete(payload.gameId)
             return;
         }
         if (game.isFieldFull()) {
             //TODO Add how to handle when Field is full but no one won
-            await this.endMatchDraw(game.player1,game.player2)
-            await this.saveGameRating(game.player1,game.player2,EndResult.DRAW)
+            await this.endMatchDraw(game.player1, game.player2)
+            await this.saveGameRating(game.player1, game.player2, EndResult.DRAW)
         }
     }
 
-    async endMatchPlayerWon(winner: WSConnection, looser: WSConnection){
+    async endMatchPlayerWon(winner: WSConnection, looser: WSConnection) {
         winner.user.mmr = this.userService.calculateNewEloRating(winner.user.mmr, looser.user.mmr, 1)
         //Update User Rating of winner
 
@@ -191,7 +191,7 @@ export class GameService {
         //increment win and loose counter for both players
     }
 
-    async saveGameRating(player1: WSConnection,player2: WSConnection, gameResultState: EndResult){
+    async saveGameRating(player1: WSConnection, player2: WSConnection, gameResultState: EndResult) {
         const gameResult = new GameResult();
         gameResult.player1 = player1.user.id
         gameResult.player2 = player2.user.id
@@ -206,7 +206,7 @@ export class GameService {
     }
 
 
-    async endMatchDraw(player1: WSConnection,player2: WSConnection){
+    async endMatchDraw(player1: WSConnection, player2: WSConnection) {
         //TODO Check if Draw Function works properly
         player1.user.mmr = this.userService.calculateNewEloRating(player1.user.mmr, player2.user.mmr, 0.5)
         //Update User Rating of winner
@@ -225,10 +225,6 @@ export class GameService {
         await this.userService.updateWinLostCount(player1.user.id, GameEndStatusDTO.TIE)
         await this.userService.updateWinLostCount(player2.user.id, GameEndStatusDTO.TIE)
         //increment win and loose counter for both players
-    }
-
-    async getUserMatchDetails(userId:number) {
-        return await this.gameResultService.getUserMatchesOfUser(userId)
     }
 
 
