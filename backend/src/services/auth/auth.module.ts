@@ -1,21 +1,20 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from "@nestjs/jwt";
-//import { jwtConstants } from "./constant";
-import { UserController } from "../../UserController";
-import { AuthService } from "./auth.service";
+import {JwtModule} from "@nestjs/jwt";
+import {UserController} from "../../controller/user/user.controller";
+import { AuthService } from './auth.service';
+import {UserService} from "../user/user.service";
+import {EncryptService} from "../encrypt/encrypt.service";
+import {jwtConstants} from "./constant";
 
-function test() {
-  console.log("I WAS HERE")
-  return 'hard!to-guess_secret'
-}
-
-@Module({  imports: [
-    JwtModule.register({
-      secret: test(), //jwtConstants.secret,
-      signOptions: { expiresIn: '60s' },
-    })],
-  providers: [AuthService,],
-  controllers: [UserController],
-  exports: [AuthService],
+@Module({
+    controllers: [UserController],
+    providers: [AuthService, UserService, EncryptService],
+    imports: [
+        JwtModule.register({
+            secret: jwtConstants.secret,
+            global: true,
+            signOptions: {expiresIn: '7d'}
+        })
+    ]
 })
 export class AuthModule {}
