@@ -1,7 +1,7 @@
 import {
     Body,
     Controller,
-    Get,
+    Get, HttpException,
     HttpStatus, NotFoundException,
     Param,
     Post, Put, Req, Res, UnauthorizedException, UploadedFile,
@@ -11,14 +11,14 @@ import {
 import {User} from "../../models/db-models/User";
 import {CreateUserDTO} from "../../models/DTO/CreateUserDTO";
 import {LoginDTO} from "../../models/DTO/LoginDTO";
-import {ApiResponse, ApiTags} from "@nestjs/swagger";
+import {ApiBearerAuth, ApiResponse, ApiTags} from "@nestjs/swagger";
 import {FileInterceptor} from "@nestjs/platform-express";
 import {Response} from "express";
 import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
 import {UserService} from "../../services/user/user.service";
 import {IsLoggedInGuard} from "../../middleware/is-logged-in-guard/is-logged-in-guard.service";
 import {IsAdminGuard} from "../../middleware/is-admin/is-admin-guard.service";
-import {UpdateUserDTO} from "../../models/DTO/UpdateUserDTO";
+import {UpdatePasswordDTO} from "../../models/DTO/UpdateUserDTO";
 
 @Controller("/api/v1/user")
 @ApiTags('user')
@@ -29,14 +29,21 @@ export class UserController {
     ) {
     }
 
-    @Get("/all")
-    @ApiResponse({status: HttpStatus.OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
-    @UseGuards(IsAdminGuard)
-    async getUsers(): Promise<UserInfoDTO[]> {
-        return await this.userService.getAllUsers()
+    @Get("/")
+    @ApiBearerAuth()
+    @ApiResponse({status: HttpStatus.OK, description: 'Returns own users by jwtToken', type: UserInfoDTO, isArray: false})
+    @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found'})
+    @UseGuards(IsLoggedInGuard)
+    async getOwnUsers(@Req() req: Request): Promise<UserInfoDTO> {
+        const id = req.headers['user-id'];
+        if (!id) {
+            throw new HttpException("no user was found", HttpStatus.NOT_FOUND)
+        }
+        return await this.userService.getUsersById(id)
     }
 
     @Get("/:id")
+    @ApiBearerAuth()
     @ApiResponse({status: HttpStatus.OK, description: 'Returns users info of a requested user', type: UserInfoDTO, isArray: false})
     @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found'})
     @UseGuards(IsLoggedInGuard)
@@ -44,7 +51,16 @@ export class UserController {
         return await this.userService.getUsersById(id)
     }
 
+    @Get("/all")
+    @ApiBearerAuth()
+    @ApiResponse({status: HttpStatus.OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
+    @UseGuards(IsAdminGuard)
+    async getUsers(): Promise<UserInfoDTO[]> {
+        return await this.userService.getAllUsers()
+    }
+
     @Put("/:id/set-admin/:booleanValue")
+    @ApiBearerAuth()
     @UseGuards(IsAdminGuard)
     @ApiResponse({status: HttpStatus.OK, description: 'Set a users admin status to true or false'})
     @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found to update admin status'})
@@ -77,22 +93,24 @@ export class UserController {
         description: "After a successful login a 'game-userid' cookie will be set to identify the user for future requests",
         status: HttpStatus.OK
     })
-    async login(@Body() user: LoginDTO, @Res({passthrough: true}) response: Response): Promise<UserInfoDTO> {
-        return await this.userService.login(user, response)
+    async login(@Body() user: LoginDTO) {
+        return await this.userService.login(user)
     }
 
-    @Put("/update-user")
-    @ApiResponse({status: HttpStatus.OK, description: 'The user was updated successfully', type: UserInfoDTO})
-    @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'The Password or the username are to short or to long'})
+    @Put("/update-password")
+    @ApiBearerAuth()
+    @ApiResponse({status: HttpStatus.OK, description: 'The password was updated successfully'})
+    @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'The Password is to short or to long'})
     @UseGuards(IsLoggedInGuard)
     @ApiResponse({type: User})
-    async updateUser(@Body() user: UpdateUserDTO, @Req() req: Request): Promise<UserInfoDTO> {
+    async updateUser(@Body() user: UpdatePasswordDTO, @Req() req: Request) {
         const id = req.headers['user-id'];
-        this.userService.checkUserInfo(user.username, user.password)
-        return await this.userService.updateUser(id, user)
+        this.userService.checkUpdatedPassword(user.password)
+        await this.userService.updateUser(id, user)
     }
 
     @Put('/:id/upload-image')
+    @ApiBearerAuth()
     @UseGuards(IsLoggedInGuard)
     @UseInterceptors(FileInterceptor('image'))
     @ApiResponse({status: 200, description: 'Image uploaded successfully', type: Response})
@@ -105,6 +123,7 @@ export class UserController {
     }
 
     @Get('/:id/image')
+    @ApiBearerAuth()
     @UseGuards(IsLoggedInGuard)
     @ApiResponse({status: 200, description: 'Image uploaded successfully', type: Buffer})
     async getImage(@Param('id') id: number, @Res() res: Response) {

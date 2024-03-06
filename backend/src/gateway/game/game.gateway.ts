@@ -3,12 +3,11 @@ import {
     WebSocketGateway,
     OnGatewayConnection,
     OnGatewayDisconnect,
-    WebSocketServer, OnGatewayInit
+    WebSocketServer, OnGatewayInit, WsException
 } from '@nestjs/websockets';
 import {Server, Socket} from 'socket.io';
 import {UserService} from 'src/services/user/user.service';
 import {AuthService} from "../../services/auth/auth.service";
-import {UnauthorizedException} from "@nestjs/common";
 import {GameService} from "../../services/game/game.service";
 import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
 
@@ -35,7 +34,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         this.gameService.getUserId(client).then(async userId => {
             const user = await this.userService.getUser(userId);
             if (!user) {
-                throw new UnauthorizedException("could not find user")
+                throw new WsException("could not find user")
             }
             this.gameService.addNewConnection(user, client, args)
             console.log(`Client connected: ${client.id} + ${args} User: ${user.username}`);
@@ -49,11 +48,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
     }
 
-    @SubscribeMessage('queue-list')
+    @SubscribeMessage('queue.list')
     getPeopleInQueue(client: Socket) {
         const ws = this.gameService.getConnectionByClient(client);
         if (!ws.user.isAdmin) {
-            throw new UnauthorizedException('only admins are allowed to view the queue')
+            throw new WsException('only admins are allowed to view the queue')
         }
 
         return this.gameService.getUserInQueue()
@@ -61,6 +60,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
     @SubscribeMessage('message')
     handleMessage(client: Socket, payload: string): void {
+        console.log(payload)
         this.server.emit('message', payload);
     }
 

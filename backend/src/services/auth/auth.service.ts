@@ -13,12 +13,17 @@ export class AuthService {
         return await this.jwtService.signAsync({username: username, sub: id})
     }
 
-    async getUserId(jwtToken: string) {
-        const decoded = this.jwtService.verify(jwtToken);
-        if (decoded.sub && !isNaN(Number(decoded.sub))) {
-            return Number(decoded.sub);
-        } else {
-            throw new Error('UserId not found or invalid in the token');
+    getUserId(jwtToken: string) {
+        try {
+            const decoded = this.jwtService.verify(jwtToken);
+            if (decoded.sub && !isNaN(Number(decoded.sub))) {
+                return Number(decoded.sub);
+            } else {
+                throw new Error('UserId not found or invalid in the token');
+            }
+        } catch (e) {
+            console.error(e)
+            return null;
         }
     }
 }

@@ -30,19 +30,19 @@ export class GameService {
     }
 
     async getUserId(client: Socket): Promise<number> {
-        const cookies = client.handshake.headers.cookie;
-        if (!cookies) {
-            throw new UnauthorizedException("no user cookie found")
+        let bearerToken: string = client.handshake.headers.authorization
+        if (!bearerToken) {
+            bearerToken = client.handshake.auth.jwtToken
+            if (!bearerToken) {
+                throw new UnauthorizedException("no user token found")
+            }
         }
-        const parsedCookies = parse(cookies || '');
-        if (!parsedCookies) {
-            throw new UnauthorizedException("no user cookie found")
-        }
-        const userToken = parsedCookies['ttt-userid'];
+
+        const userToken = bearerToken.replace("Bearer ", "")
         if (!userToken) {
             throw new UnauthorizedException("no user cookie found")
         }
-        const userId = await this.authService.getUserId(userToken);
+        const userId = this.authService.getUserId(userToken);
         if (!userToken) {
             throw new UnauthorizedException("no user found")
         }

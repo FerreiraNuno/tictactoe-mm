@@ -6,9 +6,9 @@ import { EncryptService } from "../encrypt/encrypt.service";
 import { UserInfoDTO } from "../../models/DTO/UserInfoDTO";
 import { CreateUserDTO } from "../../models/DTO/CreateUserDTO";
 import { LoginDTO } from "../../models/DTO/LoginDTO";
-import { response, Response } from "express";
+import { response } from "express";
 import { AuthService } from "../auth/auth.service";
-import { UpdateUserDTO } from "../../models/DTO/UpdateUserDTO";
+import { UpdatePasswordDTO } from "../../models/DTO/UpdateUserDTO";
 import { GameEndStatusDTO } from "../../models/DTO/GameEndStatusDTO";
 
 @Injectable()
@@ -24,7 +24,6 @@ export class UserService {
         private authService: AuthService
     ) {
         this.userRepository = dataSource.getRepository(User);
-        this.userRepository.create(new User());
     }
 
     async getAllUsers() {
@@ -52,7 +51,7 @@ export class UserService {
         return UserInfoDTO.fromUser(newUser)
     }
 
-    async login(user: LoginDTO, response: Response) {
+    async login(user: LoginDTO) {
         const foundUser = await this.userRepository.findOne({where: {username: user.username}});
         if (!foundUser) {
             throw new HttpException("Username or Password is wrong", HttpStatus.NOT_FOUND);
@@ -63,9 +62,9 @@ export class UserService {
         }
         //TODO: we only are using the user-id as an cookie because is is not clear yet if we are allowed to use jwt tokens
         const token = await this.authService.signIn(foundUser.id, foundUser.username);
-        response.cookie('game-userid', token)
-        response.status(HttpStatus.OK)
-        return UserInfoDTO.fromUser(foundUser)
+        return {
+            "jwtToken": token
+        }
     }
 
     async getUser(id: number): Promise<User> {
@@ -110,18 +109,22 @@ export class UserService {
     }
 
     checkUserInfo(username: string, password: string) {
-        if (password.length < 8 || password.length > 72) {
-            throw new HttpException("The password must be between 8 and 72 characters", HttpStatus.BAD_REQUEST);
-        }
+        this.checkUpdatedPassword(password)
 
         if (username.length < 2 || username.length > 64) {
             throw new HttpException("The username must be between 2 and 64 characters", HttpStatus.BAD_REQUEST);
         }
     }
 
-    async updateUser(id: number, user: UpdateUserDTO) {
+    checkUpdatedPassword(password: string) {
+        if (password.length < 8 || password.length > 72) {
+            throw new HttpException("The password must be between 8 and 72 characters", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    async updateUser(id: number, user: UpdatePasswordDTO) {
         const encryptedPassword = await this.encryptService.encryptPassword(user.password);
-        await this.userRepository.update({id: id}, {username: user.username, password: encryptedPassword});
+        await this.userRepository.update({id: id}, {password: encryptedPassword});
         const updatedUser = await this.getUser(id);
         return UserInfoDTO.fromUser(updatedUser)
     }

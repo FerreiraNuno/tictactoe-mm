@@ -4,7 +4,6 @@ import {
     HttpStatus, Req, UseGuards
 } from "@nestjs/common";
 import {ApiResponse, ApiTags} from "@nestjs/swagger";
-import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
 import {UserService} from "../../services/user/user.service";
 import {IsLoggedInGuard} from "../../middleware/is-logged-in-guard/is-logged-in-guard.service";
 import {GameResultService} from "../../services/game-result/game-result.service";
@@ -14,7 +13,7 @@ import {WinLoseDTO} from "../../models/DTO/WinLoseDTO";
 
 @Controller("/api/v1/history")
 @ApiTags('history')
-export class UserController {
+export class HistoryController {
 
     constructor(
         private userService: UserService,
