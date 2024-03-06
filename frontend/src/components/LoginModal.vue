@@ -29,7 +29,7 @@ const toggleActiveForm = (formName: string) => {
           <label
             for="email"
             class="block text-sm font-medium leading-6 text-gray-900"
-          >Email Addresse</label>
+          >E-Mail-Adresse</label>
           <div class="mt-2">
             <input
               id="email"
