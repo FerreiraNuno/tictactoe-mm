@@ -44,6 +44,6 @@ Before starting make sure you have nestjs installed. [More Here](https://docs.ne
 3. Run the projekt by entering the following command:
 
    ```bash
-   nest start --watch
+   npm start
    ```
        
