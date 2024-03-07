@@ -3,13 +3,15 @@ import {
     WebSocketGateway,
     OnGatewayConnection,
     OnGatewayDisconnect,
-    WebSocketServer, OnGatewayInit, WsException
+    WebSocketServer, OnGatewayInit, WsResponse, BaseWsExceptionFilter
 } from '@nestjs/websockets';
 import {Server, Socket} from 'socket.io';
 import {UserService} from 'src/services/user/user.service';
 import {AuthService} from "../../services/auth/auth.service";
 import {GameService} from "../../services/game/game.service";
 import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
+import {UseFilters} from "@nestjs/common";
+import {InGameMassageDTO} from "../../models/DTO/InGameMassageDTO";
 
 @WebSocketGateway({
     cors: {
@@ -30,11 +32,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         this.gameService.setServer(server)
     }
 
-    handleConnection(client: Socket, ...args: any[]) {
-        this.gameService.getUserId(client).then(async userId => {
+    async handleConnection(client: Socket, ...args: any[]) {
+        await this.gameService.getUserId(client).then(async userId => {
             const user = await this.userService.getUser(userId);
             if (!user) {
-                throw new WsException("could not find user")
+                client.disconnect()
+                console.log(`Client ${client.id} disconnected because no user was found`)
+                return
             }
             this.gameService.addNewConnection(user, client, args)
             console.log(`Client connected: ${client.id} + ${args} User: ${user.username}`);
@@ -45,28 +49,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         const connection = this.gameService.getConnectionByClient(client);
         this.gameService.removeConnection(client)
         console.log(`Client disconnected: ${client.id} - User ${connection.user.username}`);
-
     }
 
-    @SubscribeMessage('queue.list')
-    getPeopleInQueue(client: Socket) {
-        const ws = this.gameService.getConnectionByClient(client);
-        if (!ws.user.isAdmin) {
-            throw new WsException('only admins are allowed to view the queue')
-        }
-
-        return this.gameService.getUserInQueue()
-    }
-
-    @SubscribeMessage('message')
-    handleMessage(client: Socket, payload: string): void {
-        console.log(payload)
-        this.server.emit('message', payload);
+    @SubscribeMessage('game.message')
+    handleInGameMessage(client: Socket, payload: InGameMassageDTO): void {
+        this.gameService.sendInGameMessage(client, payload)
     }
 
     @SubscribeMessage('search')
-    handleSearch(client: Socket): void {
+    handleSearch(client: Socket) {
         this.gameService.addToSearch(client)
+        return null
     }
 
     @SubscribeMessage('game.move')

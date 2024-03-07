@@ -1,7 +1,6 @@
-import {BadRequestException, Injectable, UnauthorizedException} from "@nestjs/common";
+import {Injectable} from "@nestjs/common";
 import {Game} from "../../models/Game";
 import {User} from "../../models/db-models/User";
-import {parse} from "cookie";
 import {AuthService} from "../auth/auth.service";
 import {WSConnection} from "../../models/WSConnection";
 import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
@@ -14,6 +13,9 @@ import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
 import {GameResultService} from "../game-result/game-result.service";
 import {GameResult} from "../../models/db-models/GameResult";
 import {EndResult} from "../../models/db-models/EndResult";
+import {WsException} from "@nestjs/websockets";
+import {InGameMassageDTO} from "../../models/DTO/InGameMassageDTO";
+import {GameInfoDTO} from "../../models/DTO/GameInfoDTO";
 
 @Injectable()
 export class GameService {
@@ -34,17 +36,20 @@ export class GameService {
         if (!bearerToken) {
             bearerToken = client.handshake.auth.jwtToken
             if (!bearerToken) {
-                throw new UnauthorizedException("no user token found")
+                client.disconnect()
+                // throw new WsException("no user token found")
             }
         }
 
         const userToken = bearerToken.replace("Bearer ", "")
         if (!userToken) {
-            throw new UnauthorizedException("no user cookie found")
+            this.emitError(client, "no authorization found")
+            client.disconnect()
         }
         const userId = this.authService.getUserId(userToken);
-        if (!userToken) {
-            throw new UnauthorizedException("no user found")
+        if (!userId) {
+            this.emitError(client, "no user found")
+            client.disconnect()
         }
         return userId
     }
@@ -55,13 +60,16 @@ export class GameService {
         this.wsConnections.set(clientId, newWsConnection);
     }
 
-    removeConnection(client: any) {
+    removeConnection(client: Socket) {
         const clientId = this.getClientId(client);
         const connection = this.getConnectionByClient(client);
         this.wsConnections.delete(clientId);
         if (this.inSearchQueue.has(connection)) {
             this.inSearchQueue.delete(connection)
+            this.emitUpdateSearchQueueInfo()
         }
+
+        this.endGameCauseDisconnected(connection)
     }
 
     private getClientId(client: Socket): string {
@@ -77,13 +85,13 @@ export class GameService {
     addToSearch(client: Socket) {
         const connection: WSConnection = this.getConnectionByClient(client);
         if (this.inSearchQueue.has(connection)) {
-            throw new BadRequestException("already in search queue");
+            this.emitError(client, "already in search queue")
         }
 
         const opponentPlayer = this.searchForPartner(connection)
         if (!opponentPlayer) {
             this.inSearchQueue.add(connection)
-            this.server.emit("search.count", {'count': this.inSearchQueue.size})
+            this.emitUpdateSearchQueueInfo()
             return
         }
 
@@ -91,8 +99,7 @@ export class GameService {
         //just in case the user was already in the search queue
         this.inSearchQueue.delete(connection)
 
-        this.server.emit("search.count", {'count': this.inSearchQueue.size})
-
+        this.emitUpdateSearchQueueInfo()
         const game = new Game(connection, opponentPlayer);
         let gameId: number
         do {
@@ -113,6 +120,7 @@ export class GameService {
         gameDTO.field = game.getField()
         connection.client.emit("game.new", gameDTO)
         opponentPlayer.client.emit("game.new", gameDTO)
+        this.emitUpdateGamesList();
     }
 
     private searchForPartner(connection: WSConnection) {
@@ -133,7 +141,7 @@ export class GameService {
         const game = this.games.get(payload.gameId);
         const wsConnection = this.wsConnections.get(client.id);
         if (!game.isUserInGame(wsConnection)) {
-            throw new UnauthorizedException("you are not allowed to make a move in this game")
+            throw new WsException("you are not allowed to make a move in this game")
         }
         game.makeMove(payload.xPos, payload.yPos, wsConnection);
 
@@ -145,7 +153,7 @@ export class GameService {
         gameUpdateDTO.field = game.getField()
         game.player1.client.emit("game.update", gameUpdateDTO)
         game.player2.client.emit("game.update", gameUpdateDTO)
-
+        this.emitUpdateGamesList();
 
         const winner = game.checkForWin();
         if (winner) {
@@ -154,6 +162,7 @@ export class GameService {
             winMessageDTO.winner = winner.user.username
             game.player1.client.emit("game.end", winMessageDTO)
             game.player2.client.emit("game.end", winMessageDTO)
+            this.emitUpdateGamesList();
 
             const playerLost = game.player1.user.id === winner.user.id ? game.player1 : game.player2
 
@@ -227,6 +236,16 @@ export class GameService {
         //increment win and loose counter for both players
     }
 
+    sendInGameMessage(client: Socket, payload: InGameMassageDTO) {
+        const wsConnection = this.getConnectionByClient(client);
+        if (!this.games.has(payload.gameId) || !this.games.get(payload.gameId).isUserInGame(wsConnection)) {
+            this.emitError(client, "game does not exist or user is not in game")
+            return
+        }
+
+        this.games.get(payload.gameId).player1.client.emit("game.message", payload)
+        this.games.get(payload.gameId).player2.client.emit("game.message", payload)
+    }
 
     getUserInQueue() {
         const userList: UserInfoDTO[] = []
@@ -243,5 +262,66 @@ export class GameService {
 
     setServer(server: Server) {
         this.server = server
+    }
+
+    private endGameCauseDisconnected(connection: WSConnection) {
+        for (const cur of this.games.entries()) {
+            const gameId = cur[0]
+            const game = cur[1]
+            if (game.player1 == connection) {
+                game.player2.client.emit("game.end.disconnected", {
+                    gameId: gameId,
+                })
+
+                this.games.delete(gameId)
+            }
+
+            if (game.player2 == connection) {
+                game.player1.client.emit("game.end.disconnected", {
+                    gameId: gameId,
+                })
+
+                this.games.delete(gameId)
+            }
+        }
+    }
+
+    emitError(client: Socket, errorMsg: any) {
+        client.emit("error", {
+            "error": errorMsg
+        })
+    }
+
+    private emitUpdateSearchQueueInfo() {
+        this.server.emit("search.count", {'count': this.inSearchQueue.size})
+        const searchList = this.getUserInQueue()
+        for (const wsConnection of this.wsConnections.values()) {
+            if (wsConnection.user.isAdmin) {
+                wsConnection.client.emit("search.list", searchList)
+            }
+        }
+    }
+
+    private emitUpdateGamesList() {
+        const gameListInfo = this.getGameListInfo()
+        for (const wsConnection of this.wsConnections.values()) {
+            if (wsConnection.user.isAdmin) {
+                wsConnection.client.emit("game.list.info", gameListInfo)
+            }
+        }
+    }
+
+    private getGameListInfo(): GameInfoDTO[] {
+        const gameListInfo = []
+        for (const gameEntry of this.games) {
+            const [gameId, game] = gameEntry;
+            const gameInfo = new GameInfoDTO(
+                gameId,
+                UserInfoDTO.fromUser(game.player1.user),
+                UserInfoDTO.fromUser(game.player2.user)
+            )
+            gameListInfo.push(gameInfo)
+        }
+        return gameListInfo
     }
 }

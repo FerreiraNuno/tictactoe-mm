@@ -27,6 +27,10 @@ export class IsLoggedInGuard implements CanActivate {
 
         const userId = this.authService.getUserId(token)
 
+        if (!userId) {
+            throw new UnauthorizedException('Access denied');
+        }
+
         return this.userService.userExists(userId).then(async userExists => {
             if (!userExists) {
                 throw new UnauthorizedException('Access denied');

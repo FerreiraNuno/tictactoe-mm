@@ -24,6 +24,11 @@ export class IsAdminGuard implements CanActivate {
             throw new UnauthorizedException('Authorization failed');
         }
         const userId = this.authService.getUserId(token)
+
+        if (!userId) {
+            throw new UnauthorizedException('Access denied');
+        }
+
         return this.userService.isUserAdmin(userId).then(async isUserAdmin => {
             if (!isUserAdmin) {
                 throw new UnauthorizedException('Access denied');

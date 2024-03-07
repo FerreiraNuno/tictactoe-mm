@@ -22,7 +22,6 @@ export class AuthService {
                 throw new Error('UserId not found or invalid in the token');
             }
         } catch (e) {
-            console.error(e)
             return null;
         }
     }
