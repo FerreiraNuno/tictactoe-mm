@@ -27,6 +27,8 @@ To start the Vue frontend, follow these steps:
 
 To start the backend, follow these steps:
 
+Before starting make sure you have nestjs installed. [More Here](https://docs.nestjs.com/first-steps)
+
 1. Navigate to the `backend` directory:
 
     ```bash
