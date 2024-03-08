@@ -2,14 +2,62 @@
   setup
   lang="ts"
 >
-import { ref } from 'vue'
+import { ref, watchEffect } from 'vue'
+import Cookies from 'js-cookie'
+import useAuth from '@/helpers/auth'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const { isLoggedIn, checkAuth } = useAuth()
 
-const activeForm = ref('login') // 'login' or 'signup'
+const username = ref('')
+const password = ref('')
+const formIsValid = ref(false)
+const errorMessage = ref('')
 
-const toggleActiveForm = (formName: string) => {
-  activeForm.value = formName
+// Remaining setup code...
+const checkForm = () => {
+  // Adjust validation logic if needed, for now, just check if non-empty
+  formIsValid.value = username.value.trim() !== '' && password.value.trim() !== ''
+}
+
+// Update the submitForm function to use username
+const submitForm = async (e: Event) => {
+  checkForm()
+  e.preventDefault()
+  if (formIsValid.value) {
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/user/login', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username.value,
+          password: password.value,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error('Network response was not ok')
+      }
+      const data = await response.json()
+      Cookies.set('jwtToken', data.jwtToken, { expires: 1 }) // Expires in 1 day
+      checkAuth()
+      setTimeout(() => {
+        router.push('/play')
+      }, 200)
+    } catch (error: any) {
+      console.error('Error:', error)
+      errorMessage.value = error.message
+    }
+  } else {
+    errorMessage.value = 'Bitte überprüfen Sie Ihre Eingaben.'
+  }
 }
 </script>
+
+
+
 
 <template>
   <div class="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
@@ -22,21 +70,21 @@ const toggleActiveForm = (formName: string) => {
     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
       <form
         class="space-y-6"
-        action="#"
-        method="POST"
+        @submit.prevent="submitForm"
       >
         <div>
           <label
-            for="email"
+            for="username"
             class="block text-sm font-medium leading-6 text-gray-900"
           >E-Mail-Adresse</label>
           <div class="mt-2">
             <input
-              id="email"
-              name="email"
-              type="email"
-              autocomplete="email"
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              v-model="username"
+              id="username"
+              name="username"
+              type="username"
+              autocomplete="username"
+              class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             />
           </div>
         </div>
@@ -50,11 +98,12 @@ const toggleActiveForm = (formName: string) => {
           </div>
           <div class="mt-2">
             <input
+              v-model="password"
               id="password"
               name="password"
               type="password"
               autocomplete="current-password"
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             />
           </div>
         </div>
@@ -66,6 +115,13 @@ const toggleActiveForm = (formName: string) => {
           >
             Anmelden
           </button>
+          <!-- Error Message -->
+          <div
+            v-if="errorMessage"
+            class="mt-2 text-center text-sm text-red-500"
+          >
+            {{ errorMessage }}
+          </div>
         </div>
       </form>
 
