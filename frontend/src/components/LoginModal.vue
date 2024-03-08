@@ -4,23 +4,18 @@
 >
 import { ref, watchEffect } from 'vue'
 import Cookies from 'js-cookie'
-import useAuth from '@/helpers/auth'
 import { useRouter } from 'vue-router'
 const router = useRouter()
-const { isLoggedIn, checkAuth } = useAuth()
 
 const username = ref('')
 const password = ref('')
 const formIsValid = ref(false)
 const errorMessage = ref('')
 
-// Remaining setup code...
 const checkForm = () => {
-  // Adjust validation logic if needed, for now, just check if non-empty
   formIsValid.value = username.value.trim() !== '' && password.value.trim() !== ''
 }
 
-// Update the submitForm function to use username
 const submitForm = async (e: Event) => {
   checkForm()
   e.preventDefault()
@@ -42,7 +37,6 @@ const submitForm = async (e: Event) => {
       }
       const data = await response.json()
       Cookies.set('jwtToken', data.jwtToken, { expires: 1 }) // Expires in 1 day
-      checkAuth()
       setTimeout(() => {
         router.push('/play')
       }, 200)
@@ -51,7 +45,7 @@ const submitForm = async (e: Event) => {
       errorMessage.value = error.message
     }
   } else {
-    errorMessage.value = 'Bitte überprüfen Sie Ihre Eingaben.'
+    errorMessage.value = 'Bitte überprüfen Sie Ihre Eingaben. Anfrage wurde nicht gesendet.'
   }
 }
 </script>
@@ -76,7 +70,7 @@ const submitForm = async (e: Event) => {
           <label
             for="username"
             class="block text-sm font-medium leading-6 text-gray-900"
-          >E-Mail-Adresse</label>
+          >Benutzername</label>
           <div class="mt-2">
             <input
               v-model="username"
