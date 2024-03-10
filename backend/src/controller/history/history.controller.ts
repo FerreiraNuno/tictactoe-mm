@@ -22,7 +22,7 @@ export class HistoryController {
     }
 
     @Get("/all")
-    @ApiResponse({status: HttpStatus.OK, description: 'Returns history of ', type: GameResultDTO, isArray: true})
+    @ApiResponse({status: HttpStatus.OK, description: 'Returns history of own game results', type: GameResultDTO, isArray: true})
     @UseGuards(IsLoggedInGuard)
     async getGameHistory(@Req() req: Request): Promise<GameResultDTO[]> {
         const user: User = await this.userService.getUserByRequest(req)

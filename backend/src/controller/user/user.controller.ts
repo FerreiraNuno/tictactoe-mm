@@ -103,7 +103,7 @@ export class UserController {
     @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'The Password is to short or to long'})
     @UseGuards(IsLoggedInGuard)
     @ApiResponse({type: User})
-    async updateUser(@Body() user: UpdatePasswordDTO, @Req() req: Request) {
+    async updateUserPassword(@Body() user: UpdatePasswordDTO, @Req() req: Request) {
         const id = req.headers['user-id'];
         this.userService.checkUpdatedPassword(user.password)
         await this.userService.updateUserPassword(id, user)
