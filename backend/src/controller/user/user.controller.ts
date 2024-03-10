@@ -42,6 +42,14 @@ export class UserController {
         return await this.userService.getUsersById(id)
     }
 
+    @Get("/all")
+    @ApiBearerAuth()
+    @ApiResponse({status: HttpStatus.OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
+    @UseGuards(IsAdminGuard)
+    async getUsers(): Promise<UserInfoDTO[]> {
+        return await this.userService.getAllUsers()
+    }
+
     @Get("/:id")
     @ApiBearerAuth()
     @ApiResponse({status: HttpStatus.OK, description: 'Returns users info of a requested user', type: UserInfoDTO, isArray: false})
@@ -49,14 +57,6 @@ export class UserController {
     @UseGuards(IsLoggedInGuard)
     async getSpecificUser(@Param("id") id: number): Promise<UserInfoDTO> {
         return await this.userService.getUsersById(id)
-    }
-
-    @Get("/all")
-    @ApiBearerAuth()
-    @ApiResponse({status: HttpStatus.OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
-    @UseGuards(IsAdminGuard)
-    async getUsers(): Promise<UserInfoDTO[]> {
-        return await this.userService.getAllUsers()
     }
 
     @Put("/:id/set-admin/:booleanValue")
@@ -106,7 +106,7 @@ export class UserController {
     async updateUser(@Body() user: UpdatePasswordDTO, @Req() req: Request) {
         const id = req.headers['user-id'];
         this.userService.checkUpdatedPassword(user.password)
-        await this.userService.updateUser(id, user)
+        await this.userService.updateUserPassword(id, user)
     }
 
     @Put('/:id/upload-image')

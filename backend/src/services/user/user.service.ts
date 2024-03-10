@@ -122,7 +122,7 @@ export class UserService {
         }
     }
 
-    async updateUser(id: number, user: UpdatePasswordDTO) {
+    async updateUserPassword(id: number, user: UpdatePasswordDTO) {
         const encryptedPassword = await this.encryptService.encryptPassword(user.password);
         await this.userRepository.update({id: id}, {password: encryptedPassword});
         const updatedUser = await this.getUser(id);

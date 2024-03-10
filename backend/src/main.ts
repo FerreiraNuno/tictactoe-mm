@@ -2,6 +2,7 @@ import { NestFactory } from "@nestjs/core"
 import { AppModule } from "./app.module"
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger"
 import * as cookieParser from 'cookie-parser'
+import {SeederService} from "./services/seeder/seeder.service";
 
 async function bootstrap () {
   const app = await NestFactory.create(AppModule)
@@ -23,7 +24,8 @@ async function bootstrap () {
     methods: '*', // Specify allowed methods
     allowedHeaders: '*', // Specify allowed headers
   })
-
+  const seeder = app.get(SeederService);
+  await seeder.seedDemoUsers()
   await app.listen(3000)
 }
 bootstrap()
