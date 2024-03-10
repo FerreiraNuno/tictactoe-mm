@@ -20,17 +20,34 @@ export class GameResultService {
     }
 
     async getUserMatchesOfUser(userId: number) {
-        return await this.resultRepository.findBy({player1: userId} || {player2: userId})
+        return await this.resultRepository.createQueryBuilder('gameResult')
+            .where('gameResult.player1 = :userId OR gameResult.player2 = :userId', {userId})
+            .getMany()
     }
 
-    async getUserMatchesLossesOfUser(userid: number) {
+    async getUserMatchesLossesOfUserCount(userid: number) {
         return await this.resultRepository.createQueryBuilder('gameResult')
             .where('(gameResult.player1 = :userid AND gameResult.result = :lossAsPlayer1) OR (gameResult.player2 = :userid AND gameResult.result = :lossAsPlayer2)', {
                 userid,
                 lossAsPlayer1: EndResult.PLAYER_2.toString(),
                 lossAsPlayer2: EndResult.PLAYER_1.toString(),
             })
-            .getMany();
+            .getCount();
     }
 
+    async getUserMatchesWinsOfUserCount(userid: number) {
+        return await this.resultRepository.createQueryBuilder('gameResult')
+            .where('(gameResult.player1 = :userid AND gameResult.result = :wonAsPlayer1) OR (gameResult.player2 = :userid AND gameResult.result = :wonAsPlayer2)', {
+                userid,
+                wonAsPlayer1: EndResult.PLAYER_1.toString(),
+                wonAsPlayer2: EndResult.PLAYER_2.toString(),
+            })
+            .getCount();
+    }
+
+    async getUserMatchesTotalOfUserCount(userId: number) {
+        return await this.resultRepository.createQueryBuilder('gameResult')
+            .where('gameResult.player1 = :userId OR gameResult.player2 = :userId', {userId})
+            .getCount()
+    }
 }

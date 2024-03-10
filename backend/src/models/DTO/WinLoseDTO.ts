@@ -3,4 +3,5 @@ export class WinLoseDTO {
     losses: number
     winLoseRate: number
     total: number
+    draws: number;
 }

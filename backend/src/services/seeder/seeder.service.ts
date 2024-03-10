@@ -39,6 +39,27 @@ export class SeederService {
         await this.userService.updateUserRating(1, gameResult.player1mmr)
         await this.userService.updateUserRating(2, gameResult.player2mmr)
         await this.gameResultService.addResult(gameResult)
+
+        const gameResult2 = new GameResult();
+        gameResult2.player1 = 1
+        gameResult2.player2 = 2
+        gameResult2.result = EndResult.PLAYER_2.toString()
+        gameResult2.player1mmr = this.userService.calculateNewEloRating(gameResult.player1mmr, gameResult.player2mmr, 1)
+        gameResult2.player2mmr = this.userService.calculateNewEloRating(gameResult.player1mmr, gameResult.player2mmr, 0)
+        await this.userService.updateUserRating(1, gameResult2.player1mmr)
+        await this.userService.updateUserRating(2, gameResult2.player2mmr)
+        await this.gameResultService.addResult(gameResult2)
+
+        const gameResult3 = new GameResult();
+        gameResult3.player1 = 1
+        gameResult3.player2 = 2
+        gameResult3.result = EndResult.PLAYER_2.toString()
+        gameResult3.player1mmr = this.userService.calculateNewEloRating(gameResult2.player1mmr, gameResult2.player2mmr, 1)
+        gameResult3.player2mmr = this.userService.calculateNewEloRating(gameResult2.player1mmr, gameResult2.player2mmr, 0)
+        await this.userService.updateUserRating(1, gameResult3.player1mmr)
+        await this.userService.updateUserRating(2, gameResult3.player2mmr)
+        await this.gameResultService.addResult(gameResult3)
+
         console.log("Demo data finished loading")
     }
 }

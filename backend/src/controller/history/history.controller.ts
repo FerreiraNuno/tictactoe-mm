@@ -36,13 +36,15 @@ export class HistoryController {
     @Get("/win-lose-rate")
     @ApiResponse({status: HttpStatus.OK, description: 'Returns Win Lose Rate', type: WinLoseDTO})
     @UseGuards(IsLoggedInGuard)
-    async getWinLoseRate(@Req() req: Request): Promise<GameResultDTO[]> {
+    async getWinLoseRate(@Req() req: Request): Promise<WinLoseDTO> {
         const user: User = await this.userService.getUserByRequest(req)
-        const result: GameResultDTO[] = []
-        for (const gameResult of await this.resultService.getUserMatchesLossesOfUser(user.id)) {
-            result.push(GameResultDTO.ofGameResult(gameResult))
-        }
-        return result
+        const winLoseDTO = new WinLoseDTO();
+        winLoseDTO.losses = await this.resultService.getUserMatchesLossesOfUserCount(user.id);
+        winLoseDTO.wins = await this.resultService.getUserMatchesWinsOfUserCount(user.id);
+        winLoseDTO.total = await this.resultService.getUserMatchesTotalOfUserCount(user.id);
+        winLoseDTO.draws = winLoseDTO.total - winLoseDTO.wins - winLoseDTO.losses;
+        winLoseDTO.winLoseRate = ((winLoseDTO.wins + 0.5 * winLoseDTO.draws) / winLoseDTO.total) * 100
+        return winLoseDTO
     }
 
 
