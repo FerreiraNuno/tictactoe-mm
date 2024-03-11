@@ -91,9 +91,46 @@ const games = ref([
 ])
 
 //Ändern des Passworts
-const changePassword = () => {
-  // TBD
-}
+const showPasswordModal = ref(false)
+const newPassword = ref('')
+const confirmPassword = ref('')
+const passwordChangeError = ref('')
+const changePassword = async (e: Event) => {
+  e.preventDefault();
+  if (newPassword.value.trim() === '' || confirmPassword.value.trim() === '') {
+    passwordChangeError.value = 'Felder dürfen nicht leer sein.';
+    return;
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    passwordChangeError.value = 'Passwörter stimmen nicht überein.';
+    return;
+  }
+  try {
+    const jwtToken = Cookies.get('jwtToken')
+    const response = await fetch('http://localhost:3000/api/v1/user/update-password', {
+      method: 'PUT',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        password: newPassword.value.trim(),
+      }),
+    });
+    if (response.status === 400) {
+      throw new Error('Das Passwort muss zwischen 8 und 72 Zeichen lang sein.');
+    } else if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    } passwordChangeError.value = 'Passwort erfolgreich geändert.';
+  } catch (error: any) {
+    console.error('Error:', error);
+    passwordChangeError.value = error.message || 'Passwortänderung fehlgeschlagen.';
+  } finally {
+    newPassword.value = '';
+    confirmPassword.value = '';
+  }
+};
 
 //Hochladen des Profilbilds
 const uploadProfilePicture = () => {
@@ -102,11 +139,40 @@ const uploadProfilePicture = () => {
 </script>
 
 <template>
-  <h1 class="text-3xl font-bold pt-4">Mein Profil</h1>
+  <div v-if="showPasswordModal" class="modal-mask">
+    <div class="modal-wrapper">
+      <div class="modal-container">
+        <h2 class="modal-title">Passwort ändern</h2>
+        <div class="modal-body">
+          <form @submit.prevent="changePassword" class="p-9">
+            <label for="newPassword">Neues Passwort:</label>
+            <input type="password" id="newPassword" v-model="newPassword"
+                   class="block w-full rounded-md border-0 p-1.5 mb-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+            <label for="confirmPassword">Neues Passwort bestätigen:</label>
+            <input type="password" id="confirmPassword" v-model="confirmPassword"
+                   class="block w-full rounded-md border-0 p-1.5 mb-6 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+            <div v-if="passwordChangeError" class="alert alert-danger">{{ passwordChangeError }}</div>
+            <div class="modal-actions">
+              <button type="button" @click="showPasswordModal = false, newPassword= '', confirmPassword= '', passwordChangeError= ''"
+                      class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+              >Abbrechen</button>
+              <button type="submit"
+                      class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              >Ändern</button>
+            </div>
+          </form>
+        </div>
+        <button @click="showPasswordModal = false" class="btn-close absolute top-5 right-5">
+          <svg>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
   <div class="container mx-auto flex items-center justify-center p-2">
     <div class="container mt-8">
       <div class="rounded-xl flex flex-col px-16 py-8 pl-0 pt-0 pb-0 w-full h-full">
-        <h2 class="text-2xl font-bold mb-4">Benutzer</h2>
+        <h2 class="text-2xl font-bold mb-4">Mein Profil</h2>
         <div class=" rounded-xl bg-white shadow-md p-4">
           <div class="flex justify-between mb-4">
             <div>
@@ -165,13 +231,17 @@ const uploadProfilePicture = () => {
           </div>
           <div class="text-sm pt-4">
             <a
-              class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
-              href="#"
+                class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+                @click="showPasswordModal = true"
             >
               Passwort ändern
             </a>
+
           </div>
         </div>
+        <router-link to="/play" class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md mt-7">
+          Neues Spiel beginnen
+        </router-link>
       </div>
     </div>
     <div class="container mt-8 ">
@@ -203,5 +273,56 @@ const uploadProfilePicture = () => {
 .container {
   width: 85vw;
   height: 80vh;
+}
+
+.modal-mask {
+  /* Style the modal overlay */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-wrapper {
+  /* Style the modal container */
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.modal-container {
+  /* Style the modal content */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-title {
+  /* Style the modal title */
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.modal-actions {
+  /* Style the action buttons */
+  display: flex;
+  gap: 10px;
+}
+
+.btn-close {
+  /* Style the close button */
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
 }
 </style>
