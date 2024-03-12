@@ -46,6 +46,4 @@ export class HistoryController {
         winLoseDTO.winLoseRate = ((winLoseDTO.wins + 0.5 * winLoseDTO.draws) / winLoseDTO.total) * 100
         return winLoseDTO
     }
-
-
 }

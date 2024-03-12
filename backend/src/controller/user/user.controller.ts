@@ -29,50 +29,6 @@ export class UserController {
     ) {
     }
 
-    @Get("/")
-    @ApiBearerAuth()
-    @ApiResponse({status: HttpStatus.OK, description: 'Returns own users by jwtToken', type: UserInfoDTO, isArray: false})
-    @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found'})
-    @UseGuards(IsLoggedInGuard)
-    async getOwnUsers(@Req() req: Request): Promise<UserInfoDTO> {
-        const id = req.headers['user-id'];
-        if (!id) {
-            throw new HttpException("no user was found", HttpStatus.NOT_FOUND)
-        }
-        return await this.userService.getUsersById(id)
-    }
-
-    @Get("/all")
-    @ApiBearerAuth()
-    @ApiResponse({status: HttpStatus.OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
-    @UseGuards(IsAdminGuard)
-    async getUsers(): Promise<UserInfoDTO[]> {
-        return await this.userService.getAllUsers()
-    }
-
-    @Get("/:id")
-    @ApiBearerAuth()
-    @ApiResponse({status: HttpStatus.OK, description: 'Returns users info of a requested user', type: UserInfoDTO, isArray: false})
-    @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found'})
-    @UseGuards(IsLoggedInGuard)
-    async getSpecificUser(@Param("id") id: number): Promise<UserInfoDTO> {
-        return await this.userService.getUsersById(id)
-    }
-
-    @Put("/:id/set-admin/:booleanValue")
-    @ApiBearerAuth()
-    @UseGuards(IsAdminGuard)
-    @ApiResponse({status: HttpStatus.OK, description: 'Set a users admin status to true or false'})
-    @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found to update admin status'})
-    async setAdmin(@Req() req: Request, @Param("id") id: number, @Param("booleanValue") booleanString: string) {
-        id = Number(id)
-        const isAdmin: boolean = (booleanString.toLowerCase() == "true")
-        const number: number = await this.userService.setAdmin(id, isAdmin)
-        if (number != 1) {
-            throw new NotFoundException("could not find the user to be set admin status")
-        }
-        return HttpStatus.OK
-    }
 
     @Post("/register")
     @ApiResponse({status: HttpStatus.CREATED, description: 'The user was created successfully', type: UserInfoDTO})
@@ -95,6 +51,82 @@ export class UserController {
     })
     async login(@Body() user: LoginDTO) {
         return await this.userService.login(user)
+    }
+
+    @Get("/")
+    @ApiBearerAuth()
+    @ApiResponse({
+        status: HttpStatus.OK,
+        description: 'Returns own users by jwtToken',
+        type: UserInfoDTO,
+        isArray: false
+    })
+    @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found'})
+    @UseGuards(IsLoggedInGuard)
+    async getOwnUsers(@Req() req: Request): Promise<UserInfoDTO> {
+        const id = req.headers['user-id'];
+        if (!id) {
+            throw new HttpException("no user was found", HttpStatus.NOT_FOUND)
+        }
+        return await this.userService.getUsersById(id)
+    }
+
+    @Get("/all")
+    @ApiBearerAuth()
+    @ApiResponse({status: HttpStatus.OK, description: 'Returns all users', type: UserInfoDTO, isArray: true})
+    @UseGuards(IsAdminGuard)
+    async getUsers(): Promise<UserInfoDTO[]> {
+        return await this.userService.getAllUsers()
+    }
+
+    @Get("/:id")
+    @ApiBearerAuth()
+    @ApiResponse({
+        status: HttpStatus.OK,
+        description: 'Returns users info of a requested user',
+        type: UserInfoDTO,
+        isArray: false
+    })
+    @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found'})
+    @UseGuards(IsLoggedInGuard)
+    async getSpecificUser(@Param("id") id: number): Promise<UserInfoDTO> {
+        return await this.userService.getUsersById(id)
+    }
+
+    @Get('/:id/image')
+    @ApiBearerAuth()
+    @UseGuards(IsLoggedInGuard)
+    @ApiResponse({
+        status: 200,
+        description: 'Image uploaded successfully',
+        content: {
+            'image/jpeg': {
+                schema: {
+                    type: 'string',
+                    format: 'binary'
+                }
+            }
+        },
+    })
+    async getImage(@Param('id') id: number, @Res() res: Response) {
+        const image: Buffer = await this.userService.getImage(id);
+        res.type('image/jpeg');
+        res.send(image);
+    }
+
+    @Put("/:id/set-admin/:booleanValue")
+    @ApiBearerAuth()
+    @UseGuards(IsAdminGuard)
+    @ApiResponse({status: HttpStatus.OK, description: 'Set a users admin status to true or false'})
+    @ApiResponse({status: HttpStatus.NOT_FOUND, description: 'no user was found to update admin status'})
+    async setAdmin(@Req() req: Request, @Param("id") id: number, @Param("booleanValue") booleanString: string) {
+        id = Number(id)
+        const isAdmin: boolean = (booleanString.toLowerCase() == "true")
+        const number: number = await this.userService.setAdmin(id, isAdmin)
+        if (number != 1) {
+            throw new NotFoundException("could not find the user to be set admin status")
+        }
+        return HttpStatus.OK
     }
 
     @Put("/update-password")
@@ -120,15 +152,5 @@ export class UserController {
             throw new UnauthorizedException("only admin can upload images to other users profiles")
         }
         return await this.userService.uploadImage(id, file)
-    }
-
-    @Get('/:id/image')
-    @ApiBearerAuth()
-    @UseGuards(IsLoggedInGuard)
-    @ApiResponse({status: 200, description: 'Image uploaded successfully', type: Buffer})
-    async getImage(@Param('id') id: number, @Res() res: Response) {
-        const image: Buffer = await this.userService.getImage(id);
-        res.type('image/jpeg');
-        res.send(image);
     }
 }

@@ -1,16 +1,23 @@
 import {GameResult} from "../db-models/GameResult";
+import {ApiProperty} from "@nestjs/swagger";
 
 export class GameResultDTO {
+    @ApiProperty()
     id: number;
 
+    @ApiProperty()
     player1: number;
 
+    @ApiProperty()
     player1mmr: number;
 
+    @ApiProperty()
     player2: number;
 
+    @ApiProperty()
     player2mmr: number;
 
+    @ApiProperty()
     result: string;
 
     static ofGameResult(gameResult: GameResult) {

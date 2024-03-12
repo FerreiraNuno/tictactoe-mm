@@ -1,17 +1,22 @@
 import {FieldStatus} from "../FieldStatus";
 import {Game} from "../Game";
+import {ApiProperty} from "@nestjs/swagger";
 
 export class GameUpdateDTO {
 
-    constructor(
-        private field: FieldStatus[][],
-        private activePlayerName: string
-    ) {
-    }
+
+    @ApiProperty()
+    public field: FieldStatus[][]
+
+    @ApiProperty()
+    public activePlayerName: string
+
     static fromGame(game: Game) {
-        return new GameUpdateDTO(
-            game.getField(),
-            game.getActivePlayerName()
-        )
+        const gameUpdateDTO = new GameUpdateDTO(
+
+        );
+        gameUpdateDTO.field = game.getField()
+        gameUpdateDTO.activePlayerName = game.getActivePlayerName()
+        return gameUpdateDTO
     }
 }

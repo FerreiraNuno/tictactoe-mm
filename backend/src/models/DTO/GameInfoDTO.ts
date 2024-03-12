@@ -1,10 +1,13 @@
 import {UserInfoDTO} from "./UserInfoDTO";
+import {ApiProperty} from "@nestjs/swagger";
 
 export class GameInfoDTO {
-    constructor(
-        private gameId: number,
-        private player1: UserInfoDTO,
-        private player2: UserInfoDTO
-    ) {
-    }
+    @ApiProperty()
+    public gameId: number
+
+    @ApiProperty()
+    public player1: UserInfoDTO
+
+    @ApiProperty()
+    public player2: UserInfoDTO
 }

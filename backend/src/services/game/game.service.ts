@@ -315,11 +315,10 @@ export class GameService {
         const gameListInfo = []
         for (const gameEntry of this.games) {
             const [gameId, game] = gameEntry;
-            const gameInfo = new GameInfoDTO(
-                gameId,
-                UserInfoDTO.fromUser(game.player1.user),
-                UserInfoDTO.fromUser(game.player2.user)
-            )
+            const gameInfo = new GameInfoDTO()
+            gameInfo.gameId = gameId
+            gameInfo.player1 = UserInfoDTO.fromUser(game.player1.user)
+            gameInfo.player2 = UserInfoDTO.fromUser(game.player2.user)
             gameListInfo.push(gameInfo)
         }
         return gameListInfo
