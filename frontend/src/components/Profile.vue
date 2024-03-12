@@ -3,7 +3,7 @@
   setup
 >
 import Cookies from 'js-cookie'
-import { onMounted, ref, type Ref } from 'vue'
+import {onMounted, ref, type Ref} from 'vue'
 
 // define user type
 interface User {
@@ -16,7 +16,6 @@ interface User {
   profilePicture: string
 }
 
-
 const currentUser: Ref<User> = ref({
   id: 1,
   username: 'No User Found',
@@ -26,7 +25,6 @@ const currentUser: Ref<User> = ref({
   losses: 5,
   profilePicture: '../assets/profile.jpeg.',
 })
-
 
 async function fetchUserData () {
   try {
@@ -68,27 +66,100 @@ async function fetchUserData () {
   }
 }
 
+// Fetch all users
+const allUsers: Ref<User[]> = ref([])
+async function fetchAllUsers () {
+  try {
+    const jwtToken = Cookies.get('jwtToken')
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.')
+    }
+    const response = await fetch('http://localhost:3000/api/v1/user/all', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch user data. Please check your authentication token.')
+    }
+    allUsers.value = await response.json()
+  } catch (error: any) {
+    console.error('Error:', error.message)
+  }
+}
+
+// Fetch game queue
+const gameQueue: Ref<User[]> = ref([])
+async function fetchGameQueue () {
+  try {
+    const jwtToken = Cookies.get('jwtToken')
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.')
+    }
+    const response = await fetch('http://localhost:3000/api/v1/game/queue', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch game queue. Please check your authentication token.')
+    }
+    gameQueue.value = await response.json()
+  } catch (error: any) {
+    console.error('Error:', error.message)
+  }
+}
+
 onMounted(async () => {
   const userData = await fetchUserData()
+  await fetchGameHistory()
+  await fetchAllUsers()
+  await fetchGameQueue()
+
 })
 
-const games = ref([
-  { id: 1, opponent: 'Spieler A', result: 'Gewonnen' },
-  { id: 2, opponent: 'Spieler B', result: 'Verloren' },
-  { id: 3, opponent: 'Spieler C', result: 'Unentschieden' },
-  { id: 4, opponent: 'Spieler D', result: 'Gewonnen' },
-  { id: 5, opponent: 'Spieler E', result: 'Verloren' },
-  { id: 6, opponent: 'Spieler F', result: 'Unentschieden' },
-  { id: 7, opponent: 'Spieler G', result: 'Gewonnen' },
-  { id: 8, opponent: 'Spieler H', result: 'Verloren' },
-  { id: 9, opponent: 'Spieler I', result: 'Unentschieden' },
-  { id: 10, opponent: 'Spieler J', result: 'Gewonnen' },
-  { id: 11, opponent: 'Spieler K', result: 'Verloren' },
-  { id: 12, opponent: 'Spieler L', result: 'Unentschieden' },
-  { id: 13, opponent: 'Spieler M', result: 'Gewonnen' },
-  { id: 14, opponent: 'Spieler N', result: 'Verloren' },
-  { id: 15, opponent: 'Spieler O', result: 'Unentschieden' }
-])
+
+// Fetch win-lose rate
+
+
+// Fetch game history
+interface Games {
+  id: number;
+  player1: number;
+  player1mmr: number;
+  player2: number;
+  player2mmr: number;
+  result: string;
+}
+const games = ref([] as Games[])
+async function fetchGameHistory() {
+  try {
+    const jwtToken = Cookies.get('jwtToken');
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.');
+    }
+    const response = await fetch('http://localhost:3000/api/v1/history/all', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch game history.');
+    }
+    games.value = await response.json();
+  } catch (error: any) {
+    console.error('Error:', error);
+  }
+}
 
 //Ändern des Passworts
 const showPasswordModal = ref(false)
@@ -132,10 +203,13 @@ const changePassword = async (e: Event) => {
   }
 };
 
-//Hochladen des Profilbilds
+//Upload Profile Picture
 const uploadProfilePicture = () => {
   // TBD
 }
+
+const adminView = ref(false);
+
 </script>
 
 <template>
@@ -172,7 +246,16 @@ const uploadProfilePicture = () => {
   <div class="container mx-auto flex items-center justify-center p-2">
     <div class="container mt-8">
       <div class="rounded-xl flex flex-col px-16 py-8 pl-0 pt-0 pb-0 w-full h-full">
-        <h2 class="text-2xl font-bold mb-4">Mein Profil</h2>
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold mb-4">Mein Profil</h2>
+          <div v-if="currentUser.isAdmin" class="ml-auto h-full flex items-center">
+            <label for="isAdminSwitch" class="flex items-center space-x-2 relative">
+              <span class="text-sm font-semibold">Admin-Ansicht</span>
+              <input type="checkbox" id="isAdminSwitch"
+                     class="form-checkbox h-5 w-5 text-indigo-600 rounded-2xl hover:border-indigo-600"
+                     v-model="adminView"> </label>
+          </div>
+        </div>
         <div class=" rounded-xl bg-white shadow-md p-4">
           <div class="flex justify-between mb-4">
             <div>
@@ -244,7 +327,37 @@ const uploadProfilePicture = () => {
         </router-link>
       </div>
     </div>
-    <div class="container mt-8 ">
+    <div v-if="adminView" class="container mt-8 ">
+      <h2 class="text-2xl font-bold">Matchmaking-Queue</h2>
+      <div
+          id="container"
+          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+          style="max-height: 180px; overflow-y: auto;"
+      >
+        <div v-for="user in gameQueue" :key="user.id" class="flex justify-between p-1">
+          <p>{{ user.username }}</p>  <p>Waiting...</p>
+        </div>
+      </div>
+      <h2 class="text-2xl font-bold">Alle laufenden Spiele</h2>
+      <div
+          id="container"
+          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+          style="max-height: 180px; overflow-y: auto;"
+      >
+      </div>
+      <h2 class="text-2xl font-bold">Alle Spieler</h2>
+      <div
+          id="container"
+          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+          style="max-height: 180px; overflow-y: auto;"
+      >
+        <div v-for="user in allUsers" :key="user.id" class="flex justify-between p-1">
+          <p>{{ user.username }}</p>
+          <p>{{ user.mmr }}</p>
+        </div>
+      </div>
+    </div>
+    <div  v-else class="container mt-8 ">
       <h2 class="text-2xl font-bold mb-4">Stats</h2>
       <div class=" rounded-xl bg-white shadow-md p-8 mt-4 mb-4 flex w-full justify-between">
         <p>Spiele gespielt: {{ currentUser.wins + currentUser.losses }}</p>
@@ -261,7 +374,7 @@ const uploadProfilePicture = () => {
           :key="game.id"
           class="flex justify-between p-1"
         >
-          <p>{{ game.opponent }}</p>
+          <p>{{ game.player1 }} vs. {{ game.player2 }}</p>
           <p>{{ game.result }}</p>
         </div>
       </div>
@@ -276,7 +389,6 @@ const uploadProfilePicture = () => {
 }
 
 .modal-mask {
-  /* Style the modal overlay */
   position: fixed;
   top: 0;
   left: 0;
@@ -289,7 +401,6 @@ const uploadProfilePicture = () => {
 }
 
 .modal-wrapper {
-  /* Style the modal container */
   background-color: #fff;
   padding: 20px;
   border-radius: 5px;
@@ -297,26 +408,22 @@ const uploadProfilePicture = () => {
 }
 
 .modal-container {
-  /* Style the modal content */
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .modal-title {
-  /* Style the modal title */
   font-size: 18px;
   font-weight: bold;
 }
 
 .modal-actions {
-  /* Style the action buttons */
   display: flex;
   gap: 10px;
 }
 
 .btn-close {
-  /* Style the close button */
   position: absolute;
   top: 10px;
   right: 10px;
