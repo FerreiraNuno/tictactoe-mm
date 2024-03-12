@@ -121,12 +121,41 @@ onMounted(async () => {
   await fetchGameHistory()
   await fetchAllUsers()
   await fetchGameQueue()
-
+  await fetchWinLoseRate()
 })
 
 
 // Fetch win-lose rate
-
+interface WinLoseRate {
+  wins: number
+  losses: number
+  winLoseRate: number
+  total: number
+  draws: number;
+}
+const winLoseRate = ref({} as WinLoseRate)
+async function fetchWinLoseRate() {
+  try {
+    const jwtToken = Cookies.get('jwtToken');
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.');
+    }
+    const response = await fetch('http://localhost:3000/api/v1/history/win-lose-rate', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch win-lose rate.');
+    }
+    winLoseRate.value = await response.json();
+  } catch (error: any) {
+    console.error('Error:', error);
+  }
+}
 
 // Fetch game history
 interface Games {
@@ -309,8 +338,8 @@ const adminView = ref(false);
             </div>
           </div>
           <div class="">
-            <p>Gewonnene Spiele: {{ currentUser.wins }}</p>
-            <p>Verlorene Spiele: {{ currentUser.losses }}</p>
+            <p>Gewonnene Spiele: {{ winLoseRate.wins }}</p>
+            <p>Verlorene Spiele: {{ winLoseRate.losses}}</p>
           </div>
           <div class="text-sm pt-4">
             <a
@@ -360,8 +389,8 @@ const adminView = ref(false);
     <div  v-else class="container mt-8 ">
       <h2 class="text-2xl font-bold mb-4">Stats</h2>
       <div class=" rounded-xl bg-white shadow-md p-8 mt-4 mb-4 flex w-full justify-between">
-        <p>Spiele gespielt: {{ currentUser.wins + currentUser.losses }}</p>
-        <p>Winrate: {{ (currentUser.wins / (currentUser.wins + currentUser.losses) * 100).toFixed(2) }}%</p>
+        <p>Spiele gespielt: {{ winLoseRate.total }}</p>
+        <p>Winrate: {{ winLoseRate.winLoseRate.toFixed(2) }}%</p>
       </div>
       <h2 class="text-2xl font-bold">Spiele</h2>
       <div
