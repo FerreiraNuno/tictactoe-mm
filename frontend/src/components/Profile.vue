@@ -5,6 +5,13 @@
 import Cookies from 'js-cookie'
 import {onMounted, ref, type Ref} from 'vue'
 
+onMounted(async () => {
+  const userData = await fetchUserData()
+  await fetchGameHistory()
+  await fetchAllUsers()
+  await fetchGameQueue()
+  await fetchWinLoseRate()
+})
 // define user type
 interface User {
   id: number
@@ -116,15 +123,6 @@ async function fetchGameQueue () {
   }
 }
 
-onMounted(async () => {
-  const userData = await fetchUserData()
-  await fetchGameHistory()
-  await fetchAllUsers()
-  await fetchGameQueue()
-  await fetchWinLoseRate()
-})
-
-
 // Fetch win-lose rate
 interface WinLoseRate {
   wins: number
@@ -233,15 +231,47 @@ const changePassword = async (e: Event) => {
 };
 
 //Upload Profile Picture
-const uploadProfilePicture = () => {
-  // TBD
-}
+const showProfilePictureModal = ref(false);
+const profilePictureError = ref('');
+
+const uploadProfilePicture = async (e: Event) => {
+  e.preventDefault();
+
+};
 
 const adminView = ref(false);
-
 </script>
 
 <template>
+  <div v-if="showProfilePictureModal" class="modal-mask">
+    <div class="modal-wrapper">
+      <div class="modal-container">
+        <h2 class="modal-title">Profilbild hochladen</h2>
+        <div class="modal-body">
+          <form @submit.prevent="uploadProfilePicture" class="p-9">
+            <label for="profilePictureUpload" class="block mb-4">
+              <span class="text-sm font-semibold">Bild auswählen:</span>
+              <input type="file" id="profilePictureUpload" ref="profilePictureInput"
+                     class="block w-full rounded-md border-0 p-1.5 mb-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+            </label>
+            <div v-if="profilePictureError" class="alert alert-danger">{{ profilePictureError }}</div>
+            <div class="modal-actions">
+              <button type="button" @click="showProfilePictureModal = false; profilePictureError = ''"
+                      class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+              >Abbrechen</button>
+              <button type="submit"
+                      class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              >Hochladen</button>
+            </div>
+          </form>
+        </div>
+        <button @click="showProfilePictureModal = false" class="btn-close absolute top-5 right-5">
+          <svg>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
   <div v-if="showPasswordModal" class="modal-mask">
     <div class="modal-wrapper">
       <div class="modal-container">
@@ -256,7 +286,7 @@ const adminView = ref(false);
                    class="block w-full rounded-md border-0 p-1.5 mb-6 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
             <div v-if="passwordChangeError" class="alert alert-danger">{{ passwordChangeError }}</div>
             <div class="modal-actions">
-              <button type="button" @click="showPasswordModal = false, newPassword= '', confirmPassword= '', passwordChangeError= ''"
+              <button type="button" @click="showPasswordModal = false; newPassword= ''; confirmPassword= ''; passwordChangeError= ''"
                       class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
               >Abbrechen</button>
               <button type="submit"
@@ -329,11 +359,10 @@ const adminView = ref(false);
                 </g>
               </svg>
               <a
-                class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
-                href="
-                  #"
+                  class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+                  @click="showProfilePictureModal = true"
               >
-                Profilbild wählen
+                Profilbild ändern
               </a>
             </div>
           </div>
@@ -348,7 +377,6 @@ const adminView = ref(false);
             >
               Passwort ändern
             </a>
-
           </div>
         </div>
         <router-link to="/play" class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md mt-7">
@@ -390,7 +418,7 @@ const adminView = ref(false);
       <h2 class="text-2xl font-bold mb-4">Stats</h2>
       <div class=" rounded-xl bg-white shadow-md p-8 mt-4 mb-4 flex w-full justify-between">
         <p>Spiele gespielt: {{ winLoseRate.total }}</p>
-        <p>Winrate: {{ winLoseRate.winLoseRate.toFixed(2) }}%</p>
+        <p>Winrate: {{ Math.round(winLoseRate.winLoseRate * 100) / 100}}%</p>
       </div>
       <h2 class="text-2xl font-bold">Spiele</h2>
       <div
