@@ -3,8 +3,15 @@
   setup
 >
 import Cookies from 'js-cookie'
-import { onMounted, ref, type Ref } from 'vue'
+import {onMounted, ref, type Ref} from 'vue'
 
+onMounted(async () => {
+  const userData = await fetchUserData()
+  await fetchGameHistory()
+  await fetchAllUsers()
+  await fetchGameQueue()
+  await fetchWinLoseRate()
+})
 // define user type
 interface User {
   id: number
@@ -16,7 +23,6 @@ interface User {
   profilePicture: string
 }
 
-
 const currentUser: Ref<User> = ref({
   id: 1,
   username: 'No User Found',
@@ -26,7 +32,6 @@ const currentUser: Ref<User> = ref({
   losses: 5,
   profilePicture: '../assets/profile.jpeg.',
 })
-
 
 async function fetchUserData () {
   try {
@@ -68,27 +73,120 @@ async function fetchUserData () {
   }
 }
 
-onMounted(async () => {
-  const userData = await fetchUserData()
-})
+// Fetch all users
+const allUsers: Ref<User[]> = ref([])
+async function fetchAllUsers () {
+  try {
+    const jwtToken = Cookies.get('jwtToken')
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.')
+    }
+    const response = await fetch('http://localhost:3000/api/v1/user/all', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch user data. Please check your authentication token.')
+    }
+    allUsers.value = await response.json()
+  } catch (error: any) {
+    console.error('Error:', error.message)
+  }
+}
 
-const games = ref([
-  { id: 1, opponent: 'Spieler A', result: 'Gewonnen' },
-  { id: 2, opponent: 'Spieler B', result: 'Verloren' },
-  { id: 3, opponent: 'Spieler C', result: 'Unentschieden' },
-  { id: 4, opponent: 'Spieler D', result: 'Gewonnen' },
-  { id: 5, opponent: 'Spieler E', result: 'Verloren' },
-  { id: 6, opponent: 'Spieler F', result: 'Unentschieden' },
-  { id: 7, opponent: 'Spieler G', result: 'Gewonnen' },
-  { id: 8, opponent: 'Spieler H', result: 'Verloren' },
-  { id: 9, opponent: 'Spieler I', result: 'Unentschieden' },
-  { id: 10, opponent: 'Spieler J', result: 'Gewonnen' },
-  { id: 11, opponent: 'Spieler K', result: 'Verloren' },
-  { id: 12, opponent: 'Spieler L', result: 'Unentschieden' },
-  { id: 13, opponent: 'Spieler M', result: 'Gewonnen' },
-  { id: 14, opponent: 'Spieler N', result: 'Verloren' },
-  { id: 15, opponent: 'Spieler O', result: 'Unentschieden' }
-])
+// Fetch game queue
+const gameQueue: Ref<User[]> = ref([])
+async function fetchGameQueue () {
+  try {
+    const jwtToken = Cookies.get('jwtToken')
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.')
+    }
+    const response = await fetch('http://localhost:3000/api/v1/game/queue', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch game queue. Please check your authentication token.')
+    }
+    gameQueue.value = await response.json()
+  } catch (error: any) {
+    console.error('Error:', error.message)
+  }
+}
+
+// Fetch win-lose rate
+interface WinLoseRate {
+  wins: number
+  losses: number
+  winLoseRate: number
+  total: number
+  draws: number;
+}
+const winLoseRate = ref({} as WinLoseRate)
+async function fetchWinLoseRate() {
+  try {
+    const jwtToken = Cookies.get('jwtToken');
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.');
+    }
+    const response = await fetch('http://localhost:3000/api/v1/history/win-lose-rate', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch win-lose rate.');
+    }
+    winLoseRate.value = await response.json();
+  } catch (error: any) {
+    console.error('Error:', error);
+  }
+}
+
+// Fetch game history
+interface Games {
+  id: number;
+  player1: number;
+  player1mmr: number;
+  player2: number;
+  player2mmr: number;
+  result: string;
+}
+const games = ref([] as Games[])
+async function fetchGameHistory() {
+  try {
+    const jwtToken = Cookies.get('jwtToken');
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.');
+    }
+    const response = await fetch('http://localhost:3000/api/v1/history/all', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch game history.');
+    }
+    games.value = await response.json();
+  } catch (error: any) {
+    console.error('Error:', error);
+  }
+}
 
 //Ändern des Passworts
 const showPasswordModal = ref(false)
@@ -132,13 +230,48 @@ const changePassword = async (e: Event) => {
   }
 };
 
-//Hochladen des Profilbilds
-const uploadProfilePicture = () => {
-  // TBD
-}
+//Upload Profile Picture
+const showProfilePictureModal = ref(false);
+const profilePictureError = ref('');
+
+const uploadProfilePicture = async (e: Event) => {
+  e.preventDefault();
+
+};
+
+const adminView = ref(false);
 </script>
 
 <template>
+  <div v-if="showProfilePictureModal" class="modal-mask">
+    <div class="modal-wrapper">
+      <div class="modal-container">
+        <h2 class="modal-title">Profilbild hochladen</h2>
+        <div class="modal-body">
+          <form @submit.prevent="uploadProfilePicture" class="p-9">
+            <label for="profilePictureUpload" class="block mb-4">
+              <span class="text-sm font-semibold">Bild auswählen:</span>
+              <input type="file" id="profilePictureUpload" ref="profilePictureInput"
+                     class="block w-full rounded-md border-0 p-1.5 mb-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+            </label>
+            <div v-if="profilePictureError" class="alert alert-danger">{{ profilePictureError }}</div>
+            <div class="modal-actions">
+              <button type="button" @click="showProfilePictureModal = false; profilePictureError = ''"
+                      class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+              >Abbrechen</button>
+              <button type="submit"
+                      class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              >Hochladen</button>
+            </div>
+          </form>
+        </div>
+        <button @click="showProfilePictureModal = false" class="btn-close absolute top-5 right-5">
+          <svg>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
   <div v-if="showPasswordModal" class="modal-mask">
     <div class="modal-wrapper">
       <div class="modal-container">
@@ -153,7 +286,7 @@ const uploadProfilePicture = () => {
                    class="block w-full rounded-md border-0 p-1.5 mb-6 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
             <div v-if="passwordChangeError" class="alert alert-danger">{{ passwordChangeError }}</div>
             <div class="modal-actions">
-              <button type="button" @click="showPasswordModal = false, newPassword= '', confirmPassword= '', passwordChangeError= ''"
+              <button type="button" @click="showPasswordModal = false; newPassword= ''; confirmPassword= ''; passwordChangeError= ''"
                       class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
               >Abbrechen</button>
               <button type="submit"
@@ -172,7 +305,16 @@ const uploadProfilePicture = () => {
   <div class="container mx-auto flex items-center justify-center p-2">
     <div class="container mt-8">
       <div class="rounded-xl flex flex-col px-16 py-8 pl-0 pt-0 pb-0 w-full h-full">
-        <h2 class="text-2xl font-bold mb-4">Mein Profil</h2>
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold mb-4">Mein Profil</h2>
+          <div v-if="currentUser.isAdmin" class="ml-auto h-full flex items-center">
+            <label for="isAdminSwitch" class="flex items-center space-x-2 relative">
+              <span class="text-sm font-semibold">Admin-Ansicht</span>
+              <input type="checkbox" id="isAdminSwitch"
+                     class="form-checkbox h-5 w-5 text-indigo-600 rounded-2xl hover:border-indigo-600"
+                     v-model="adminView"> </label>
+          </div>
+        </div>
         <div class=" rounded-xl bg-white shadow-md p-4">
           <div class="flex justify-between mb-4">
             <div>
@@ -217,17 +359,16 @@ const uploadProfilePicture = () => {
                 </g>
               </svg>
               <a
-                class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
-                href="
-                  #"
+                  class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+                  @click="showProfilePictureModal = true"
               >
-                Profilbild wählen
+                Profilbild ändern
               </a>
             </div>
           </div>
           <div class="">
-            <p>Gewonnene Spiele: {{ currentUser.wins }}</p>
-            <p>Verlorene Spiele: {{ currentUser.losses }}</p>
+            <p>Gewonnene Spiele: {{ winLoseRate.wins }}</p>
+            <p>Verlorene Spiele: {{ winLoseRate.losses}}</p>
           </div>
           <div class="text-sm pt-4">
             <a
@@ -236,7 +377,6 @@ const uploadProfilePicture = () => {
             >
               Passwort ändern
             </a>
-
           </div>
         </div>
         <router-link to="/play" class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md mt-7">
@@ -244,11 +384,41 @@ const uploadProfilePicture = () => {
         </router-link>
       </div>
     </div>
-    <div class="container mt-8 ">
+    <div v-if="adminView" class="container mt-8 ">
+      <h2 class="text-2xl font-bold">Matchmaking-Queue</h2>
+      <div
+          id="container"
+          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+          style="max-height: 180px; overflow-y: auto;"
+      >
+        <div v-for="user in gameQueue" :key="user.id" class="flex justify-between p-1">
+          <p>{{ user.username }}</p>  <p>Waiting...</p>
+        </div>
+      </div>
+      <h2 class="text-2xl font-bold">Alle laufenden Spiele</h2>
+      <div
+          id="container"
+          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+          style="max-height: 180px; overflow-y: auto;"
+      >
+      </div>
+      <h2 class="text-2xl font-bold">Alle Spieler</h2>
+      <div
+          id="container"
+          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+          style="max-height: 180px; overflow-y: auto;"
+      >
+        <div v-for="user in allUsers" :key="user.id" class="flex justify-between p-1">
+          <p>{{ user.username }}</p>
+          <p>{{ user.mmr }}</p>
+        </div>
+      </div>
+    </div>
+    <div  v-else class="container mt-8 ">
       <h2 class="text-2xl font-bold mb-4">Stats</h2>
       <div class=" rounded-xl bg-white shadow-md p-8 mt-4 mb-4 flex w-full justify-between">
-        <p>Spiele gespielt: {{ currentUser.wins + currentUser.losses }}</p>
-        <p>Winrate: {{ (currentUser.wins / (currentUser.wins + currentUser.losses) * 100).toFixed(2) }}%</p>
+        <p>Spiele gespielt: {{ winLoseRate.total }}</p>
+        <p>Winrate: {{ Math.round(winLoseRate.winLoseRate * 100) / 100}}%</p>
       </div>
       <h2 class="text-2xl font-bold">Spiele</h2>
       <div
@@ -261,7 +431,7 @@ const uploadProfilePicture = () => {
           :key="game.id"
           class="flex justify-between p-1"
         >
-          <p>{{ game.opponent }}</p>
+          <p>{{ game.player1 }} vs. {{ game.player2 }}</p>
           <p>{{ game.result }}</p>
         </div>
       </div>
@@ -276,7 +446,6 @@ const uploadProfilePicture = () => {
 }
 
 .modal-mask {
-  /* Style the modal overlay */
   position: fixed;
   top: 0;
   left: 0;
@@ -289,7 +458,6 @@ const uploadProfilePicture = () => {
 }
 
 .modal-wrapper {
-  /* Style the modal container */
   background-color: #fff;
   padding: 20px;
   border-radius: 5px;
@@ -297,26 +465,22 @@ const uploadProfilePicture = () => {
 }
 
 .modal-container {
-  /* Style the modal content */
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .modal-title {
-  /* Style the modal title */
   font-size: 18px;
   font-weight: bold;
 }
 
 .modal-actions {
-  /* Style the action buttons */
   display: flex;
   gap: 10px;
 }
 
 .btn-close {
-  /* Style the close button */
   position: absolute;
   top: 10px;
   right: 10px;
