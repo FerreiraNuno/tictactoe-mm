@@ -2,26 +2,11 @@
   lang="ts"
   setup
 >
+import { fetchAllUsers, fetchUser, type User } from '@/helpers/user'
 import Cookies from 'js-cookie'
-import {onMounted, ref, type Ref} from 'vue'
+import { onMounted, ref, type Ref } from 'vue'
+import krabs from '@/assets/krabs.png'
 
-onMounted(async () => {
-  const userData = await fetchUserData()
-  await fetchGameHistory()
-  await fetchAllUsers()
-  await fetchGameQueue()
-  await fetchWinLoseRate()
-})
-// define user type
-interface User {
-  id: number
-  username: string
-  mmr: number
-  isAdmin: boolean
-  wins: number
-  losses: number
-  profilePicture: string
-}
 
 const currentUser: Ref<User> = ref({
   id: 1,
@@ -32,71 +17,24 @@ const currentUser: Ref<User> = ref({
   losses: 5,
   profilePicture: '../assets/profile.jpeg.',
 })
-
-async function fetchUserData () {
-  try {
-    const jwtToken = Cookies.get('jwtToken') // Assuming you're using js-cookie or a similar library
-
-    // Check if the token exists
-    if (!jwtToken) {
-      throw new Error('Authentication token not found. Please login first.')
-    }
-
-    // Make a GET request to the user endpoint
-    const response = await fetch('http://localhost:3000/api/v1/user', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${jwtToken}`, // Use the JWT token for authorization
-        'Content-Type': 'application/json',
-      },
-    })
-    // Check if the response was successful
-    if (!response.ok) {
-      throw new Error('Failed to fetch user data. Please check your authentication token.')
-    }
-    const userData = await response.json()
-    // parse first 4 items of the response into currentUser
-    currentUser.value = {
-      id: userData.id,
-      username: userData.username,
-      mmr: userData.mmr,
-      isAdmin: userData.isAdmin,
-      wins: 10,
-      losses: 5,
-      profilePicture: userData.profilePicture,
-    }
-
-  } catch (error: any) {
-    console.error('Error:', error.message)
-    // Handle errors or failed requests appropriately in your application
-  }
-}
-
-// Fetch all users
 const allUsers: Ref<User[]> = ref([])
-async function fetchAllUsers () {
-  try {
-    const jwtToken = Cookies.get('jwtToken')
-    if (!jwtToken) {
-      throw new Error('Authentication token not found. Please login first.')
-    }
-    const response = await fetch('http://localhost:3000/api/v1/user/all', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${jwtToken}`,
-        'Content-Type': 'application/json',
-      },
-    })
-    if (!response.ok) {
-      throw new Error('Failed to fetch user data. Please check your authentication token.')
-    }
-    allUsers.value = await response.json()
-  } catch (error: any) {
-    console.error('Error:', error.message)
+
+onMounted(async () => {
+  let user = await fetchUser()
+  if (user) {
+    currentUser.value = user
   }
-}
+  let users = await fetchAllUsers()
+  if (users) {
+    allUsers.value = users
+  }
+  await fetchGameHistory()
+  await fetchGameQueue()
+  await fetchWinLoseRate()
+})
+// define user type
+
+
 
 // Fetch game queue
 const gameQueue: Ref<User[]> = ref([])
@@ -129,14 +67,14 @@ interface WinLoseRate {
   losses: number
   winLoseRate: number
   total: number
-  draws: number;
+  draws: number
 }
 const winLoseRate = ref({} as WinLoseRate)
-async function fetchWinLoseRate() {
+async function fetchWinLoseRate () {
   try {
-    const jwtToken = Cookies.get('jwtToken');
+    const jwtToken = Cookies.get('jwtToken')
     if (!jwtToken) {
-      throw new Error('Authentication token not found. Please login first.');
+      throw new Error('Authentication token not found. Please login first.')
     }
     const response = await fetch('http://localhost:3000/api/v1/history/win-lose-rate', {
       method: 'GET',
@@ -145,31 +83,31 @@ async function fetchWinLoseRate() {
         'Authorization': `Bearer ${jwtToken}`,
         'Content-Type': 'application/json',
       },
-    });
+    })
     if (!response.ok) {
-      throw new Error('Failed to fetch win-lose rate.');
+      throw new Error('Failed to fetch win-lose rate.')
     }
-    winLoseRate.value = await response.json();
+    winLoseRate.value = await response.json()
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('Error:', error)
   }
 }
 
 // Fetch game history
 interface Games {
-  id: number;
-  player1: number;
-  player1mmr: number;
-  player2: number;
-  player2mmr: number;
-  result: string;
+  id: number
+  player1: number
+  player1mmr: number
+  player2: number
+  player2mmr: number
+  result: string
 }
 const games = ref([] as Games[])
-async function fetchGameHistory() {
+async function fetchGameHistory () {
   try {
-    const jwtToken = Cookies.get('jwtToken');
+    const jwtToken = Cookies.get('jwtToken')
     if (!jwtToken) {
-      throw new Error('Authentication token not found. Please login first.');
+      throw new Error('Authentication token not found. Please login first.')
     }
     const response = await fetch('http://localhost:3000/api/v1/history/all', {
       method: 'GET',
@@ -178,13 +116,13 @@ async function fetchGameHistory() {
         'Authorization': `Bearer ${jwtToken}`,
         'Content-Type': 'application/json',
       },
-    });
+    })
     if (!response.ok) {
-      throw new Error('Failed to fetch game history.');
+      throw new Error('Failed to fetch game history.')
     }
-    games.value = await response.json();
+    games.value = await response.json()
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('Error:', error)
   }
 }
 
@@ -194,14 +132,14 @@ const newPassword = ref('')
 const confirmPassword = ref('')
 const passwordChangeError = ref('')
 const changePassword = async (e: Event) => {
-  e.preventDefault();
+  e.preventDefault()
   if (newPassword.value.trim() === '' || confirmPassword.value.trim() === '') {
-    passwordChangeError.value = 'Felder dürfen nicht leer sein.';
-    return;
+    passwordChangeError.value = 'Felder dürfen nicht leer sein.'
+    return
   }
   if (newPassword.value !== confirmPassword.value) {
-    passwordChangeError.value = 'Passwörter stimmen nicht überein.';
-    return;
+    passwordChangeError.value = 'Passwörter stimmen nicht überein.'
+    return
   }
   try {
     const jwtToken = Cookies.get('jwtToken')
@@ -215,87 +153,132 @@ const changePassword = async (e: Event) => {
       body: JSON.stringify({
         password: newPassword.value.trim(),
       }),
-    });
+    })
     if (response.status === 400) {
-      throw new Error('Das Passwort muss zwischen 8 und 72 Zeichen lang sein.');
+      throw new Error('Das Passwort muss zwischen 8 und 72 Zeichen lang sein.')
     } else if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
-    } passwordChangeError.value = 'Passwort erfolgreich geändert.';
+      throw new Error(`API request failed with status ${response.status}`)
+    } passwordChangeError.value = 'Passwort erfolgreich geändert.'
   } catch (error: any) {
-    console.error('Error:', error);
-    passwordChangeError.value = error.message || 'Passwortänderung fehlgeschlagen.';
+    console.error('Error:', error)
+    passwordChangeError.value = error.message || 'Passwortänderung fehlgeschlagen.'
   } finally {
-    newPassword.value = '';
-    confirmPassword.value = '';
+    newPassword.value = ''
+    confirmPassword.value = ''
   }
-};
+}
 
 //Upload Profile Picture
-const showProfilePictureModal = ref(false);
-const profilePictureError = ref('');
+const showProfilePictureModal = ref(false)
+const profilePictureError = ref('')
 
 const uploadProfilePicture = async (e: Event) => {
-  e.preventDefault();
+  e.preventDefault()
 
-};
+}
 
-const adminView = ref(false);
+const adminView = ref(false)
 </script>
 
 <template>
-  <div v-if="showProfilePictureModal" class="modal-mask">
+  <div
+    v-if="showProfilePictureModal"
+    class="modal-mask"
+  >
     <div class="modal-wrapper">
       <div class="modal-container">
         <h2 class="modal-title">Profilbild hochladen</h2>
         <div class="modal-body">
-          <form @submit.prevent="uploadProfilePicture" class="p-9">
-            <label for="profilePictureUpload" class="block mb-4">
+          <form
+            @submit.prevent="uploadProfilePicture"
+            class="p-9"
+          >
+            <label
+              for="profilePictureUpload"
+              class="block mb-4"
+            >
               <span class="text-sm font-semibold">Bild auswählen:</span>
-              <input type="file" id="profilePictureUpload" ref="profilePictureInput"
-                     class="block w-full rounded-md border-0 p-1.5 mb-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+              <input
+                type="file"
+                id="profilePictureUpload"
+                ref="profilePictureInput"
+                class="block w-full rounded-md border-0 p-1.5 mb-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              >
             </label>
-            <div v-if="profilePictureError" class="alert alert-danger">{{ profilePictureError }}</div>
+            <div
+              v-if="profilePictureError"
+              class="alert alert-danger"
+            >{{ profilePictureError }}</div>
             <div class="modal-actions">
-              <button type="button" @click="showProfilePictureModal = false; profilePictureError = ''"
-                      class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+              <button
+                type="button"
+                @click="showProfilePictureModal = false; profilePictureError = ''"
+                class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
               >Abbrechen</button>
-              <button type="submit"
-                      class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              <button
+                type="submit"
+                class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >Hochladen</button>
             </div>
           </form>
         </div>
-        <button @click="showProfilePictureModal = false" class="btn-close absolute top-5 right-5">
+        <button
+          @click="showProfilePictureModal = false"
+          class="btn-close absolute top-5 right-5"
+        >
           <svg>
           </svg>
         </button>
       </div>
     </div>
   </div>
-  <div v-if="showPasswordModal" class="modal-mask">
+  <div
+    v-if="showPasswordModal"
+    class="modal-mask"
+  >
     <div class="modal-wrapper">
       <div class="modal-container">
         <h2 class="modal-title">Passwort ändern</h2>
         <div class="modal-body">
-          <form @submit.prevent="changePassword" class="p-9">
+          <form
+            @submit.prevent="changePassword"
+            class="p-9"
+          >
             <label for="newPassword">Neues Passwort:</label>
-            <input type="password" id="newPassword" v-model="newPassword"
-                   class="block w-full rounded-md border-0 p-1.5 mb-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+            <input
+              type="password"
+              id="newPassword"
+              v-model="newPassword"
+              class="block w-full rounded-md border-0 p-1.5 mb-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+            >
             <label for="confirmPassword">Neues Passwort bestätigen:</label>
-            <input type="password" id="confirmPassword" v-model="confirmPassword"
-                   class="block w-full rounded-md border-0 p-1.5 mb-6 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
-            <div v-if="passwordChangeError" class="alert alert-danger">{{ passwordChangeError }}</div>
+            <input
+              type="password"
+              id="confirmPassword"
+              v-model="confirmPassword"
+              class="block w-full rounded-md border-0 p-1.5 mb-6 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+            >
+            <div
+              v-if="passwordChangeError"
+              class="alert alert-danger"
+            >{{ passwordChangeError }}</div>
             <div class="modal-actions">
-              <button type="button" @click="showPasswordModal = false; newPassword= ''; confirmPassword= ''; passwordChangeError= ''"
-                      class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+              <button
+                type="button"
+                @click="showPasswordModal = false; newPassword = ''; confirmPassword = ''; passwordChangeError = ''"
+                class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
               >Abbrechen</button>
-              <button type="submit"
-                      class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              <button
+                type="submit"
+                class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >Ändern</button>
             </div>
           </form>
         </div>
-        <button @click="showPasswordModal = false" class="btn-close absolute top-5 right-5">
+        <button
+          @click="showPasswordModal = false"
+          class="btn-close absolute top-5 right-5"
+        >
           <svg>
           </svg>
         </button>
@@ -307,35 +290,44 @@ const adminView = ref(false);
       <div class="rounded-xl flex flex-col px-16 py-8 pl-0 pt-0 pb-0 w-full h-full">
         <div class="flex justify-between items-center">
           <h2 class="text-2xl font-bold mb-4">Mein Profil</h2>
-          <div v-if="currentUser.isAdmin" class="ml-auto h-full flex items-center">
-            <label for="isAdminSwitch" class="flex items-center space-x-2 relative">
+          <div
+            v-if="currentUser.isAdmin"
+            class="ml-auto h-full flex items-center"
+          >
+            <label
+              for="isAdminSwitch"
+              class="flex items-center space-x-2 relative"
+            >
               <span class="text-sm font-semibold">Admin-Ansicht</span>
-              <input type="checkbox" id="isAdminSwitch"
-                     class="form-checkbox h-5 w-5 text-indigo-600 rounded-2xl hover:border-indigo-600"
-                     v-model="adminView"> </label>
+              <input
+                type="checkbox"
+                id="isAdminSwitch"
+                class="form-checkbox h-5 w-5 text-indigo-600 rounded-2xl hover:border-indigo-600"
+                v-model="adminView"
+              > </label>
           </div>
         </div>
-        <div class=" rounded-xl bg-white shadow-md p-4">
-          <div class="flex justify-between mb-4">
+        <div class=" rounded-xl bg-white shadow-md p-8">
+          <div class="flex justify-between flex-collumn mb-4">
             <div>
               <h2 class="text-xl font-bold p-0">{{ currentUser.username }}</h2>
               <p>Elo-Zahl: {{ currentUser.mmr }}</p>
             </div>
-            <div class="text-sm flex flex-col items-center p-8">
+            <div class="text-sm flex flex-col items-center">
               <img
-                v-if="false"
-                :src="currentUser.profilePicture"
+                v-if="currentUser.profilePicture"
+                :src="krabs"
                 alt="Profilbild"
-                class="shadow-md w-24 h-24 rounded-full mt-4 mb-4"
+                class="shadow-md w-24 h-24 rounded-full mb-4 mt-0"
               >
               <svg
                 v-else
                 xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
+                width="48"
+                height="48"
                 viewBox="0 0 24 24"
                 id="profile"
-                class="w-24 h-24 rounded-full mt-4 mb-4 border-2 border-black p-2"
+                class="w-24 h-24 rounded-full mb-4 border-2 border-black p-2"
               >
                 <g
                   fill="
@@ -359,66 +351,76 @@ const adminView = ref(false);
                 </g>
               </svg>
               <a
-                  class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
-                  @click="showProfilePictureModal = true"
+                class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+                @click="showProfilePictureModal = true"
               >
                 Profilbild ändern
               </a>
             </div>
           </div>
-          <div class="">
-            <p>Gewonnene Spiele: {{ winLoseRate.wins }}</p>
-            <p>Verlorene Spiele: {{ winLoseRate.losses}}</p>
-          </div>
           <div class="text-sm pt-4">
             <a
-                class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
-                @click="showPasswordModal = true"
+              class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+              @click="showPasswordModal = true"
             >
               Passwort ändern
             </a>
           </div>
         </div>
-        <router-link to="/play" class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md mt-7">
-          Neues Spiel beginnen
-        </router-link>
       </div>
     </div>
-    <div v-if="adminView" class="container mt-8 ">
+    <div
+      v-if="adminView"
+      class="container mt-8 "
+    >
       <h2 class="text-2xl font-bold">Matchmaking-Queue</h2>
       <div
-          id="container"
-          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
-          style="max-height: 180px; overflow-y: auto;"
+        id="container"
+        class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+        style="max-height: 180px; overflow-y: auto;"
       >
-        <div v-for="user in gameQueue" :key="user.id" class="flex justify-between p-1">
-          <p>{{ user.username }}</p>  <p>Waiting...</p>
+        <div
+          v-for="user in gameQueue"
+          :key="user.id"
+          class="flex justify-between p-1"
+        >
+          <p>{{ user.username }}</p>
+          <p>Waiting...</p>
         </div>
       </div>
       <h2 class="text-2xl font-bold">Alle laufenden Spiele</h2>
       <div
-          id="container"
-          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
-          style="max-height: 180px; overflow-y: auto;"
+        id="container"
+        class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+        style="max-height: 180px; overflow-y: auto;"
       >
       </div>
       <h2 class="text-2xl font-bold">Alle Spieler</h2>
       <div
-          id="container"
-          class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
-          style="max-height: 180px; overflow-y: auto;"
+        id="container"
+        class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
+        style="max-height: 180px; overflow-y: auto;"
       >
-        <div v-for="user in allUsers" :key="user.id" class="flex justify-between p-1">
+        <div
+          v-for="user in allUsers"
+          :key="user.id"
+          class="flex justify-between p-1"
+        >
           <p>{{ user.username }}</p>
           <p>{{ user.mmr }}</p>
         </div>
       </div>
     </div>
-    <div  v-else class="container mt-8 ">
+    <div
+      v-else
+      class="container mt-8 "
+    >
       <h2 class="text-2xl font-bold mb-4">Stats</h2>
-      <div class=" rounded-xl bg-white shadow-md p-8 mt-4 mb-4 flex w-full justify-between">
-        <p>Spiele gespielt: {{ winLoseRate.total }}</p>
-        <p>Winrate: {{ Math.round(winLoseRate.winLoseRate * 100) / 100}}%</p>
+      <div class=" rounded-xl bg-white shadow-md p-8 mt-4 mb-4 w-full justify-between">
+        <p class="p-2">Spiele gespielt: {{ winLoseRate.total }}</p>
+        <p class="p-2">Gewonnene Spiele: {{ winLoseRate.wins }}</p>
+        <p class="p-2">Verlorene Spiele: {{ winLoseRate.losses }}</p>
+        <p class="p-2">Winrate: {{ Math.round(winLoseRate.winLoseRate * 100) / 100 }}%</p>
       </div>
       <h2 class="text-2xl font-bold">Spiele</h2>
       <div

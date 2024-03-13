@@ -24,10 +24,10 @@ const logout = () => {
 <template>
   <header className="absolute inset-x-0 top-0 z-50 bg-white shadow-sm">
     <nav
-      className="flex items-center justify-between p-6 lg:px-8"
+      className="flex items-center justify-between p-6 px-8"
       aria-label="Global"
     >
-      <div className="flex lg:flex-1">
+      <div className="flex-1">
         <a
           href="/"
           className="-m-1.5 p-1.5"
@@ -35,7 +35,7 @@ const logout = () => {
           <span className="font-black text-2xl">TicTacToe</span>
         </a>
       </div>
-      <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+      <div className="flex flex-1 justify-end">
         <div
           v-if="isLoggedIn"
           class="flex"
