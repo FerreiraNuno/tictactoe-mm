@@ -11,6 +11,19 @@ export interface User {
   profilePicture?: string | null
 }
 
+export interface UserInfo {
+  id: number
+  username: string
+  mmr: number
+  isAdmin: boolean
+}
+
+export interface GameInfo {
+  gameId: number
+  player1: UserInfo,
+  player2: UserInfo
+}
+
 import krabs from '@/assets/krabs.png'
 import patrick from '@/assets/patrick.png'
 

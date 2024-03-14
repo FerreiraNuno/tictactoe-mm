@@ -1,3 +1,4 @@
+import Cookies from "js-cookie"
 import { ref } from "vue"
 
 export interface Game {
@@ -23,4 +24,35 @@ export function makeMoveOnBoard (row: number, col: number, move: FieldStatus, bo
 
   board[row][col] = move
   return board
+}
+
+export async function fetchQueueCount (): Promise<number> {
+  try {
+    const jwtToken = Cookies.get('jwtToken') // Assuming you're using js-cookie or a similar library
+
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.')
+    }
+
+    // Make a GET request to the user endpoint
+    const response = await fetch('http://localhost:3000/api/v1/game/queue/count', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`, // Use the JWT token for authorization
+        'Content-Type': 'application/json',
+      },
+    })
+    // Check if the response was successful
+    if (!response.ok) {
+      throw new Error('Failed to fetch user data. Please check your authentication token.')
+    }
+    const count = await response.json()
+    return count
+
+  } catch (error: any) {
+    console.error('Error:', error.message)
+    return 0
+  }
+  return 0
 }
