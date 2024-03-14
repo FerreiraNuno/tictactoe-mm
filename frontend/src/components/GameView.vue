@@ -3,7 +3,7 @@
   lang="ts"
 >
 import { makeMoveOnBoard, type Game, FieldStatus } from "@/helpers/board"
-import Chat from './Chat.vue'
+import Chat, { type Message } from './Chat.vue'
 import useAuth from '@/helpers/auth'
 import { onMounted, ref, watch, watchEffect, type Ref, computed } from 'vue'
 import { Socket, io } from "socket.io-client"
@@ -24,7 +24,7 @@ const board: Ref<FieldStatus[][]> = ref([
   [0, 0, 0]
 ])
 const isMyTurn = computed(() => game.value?.currentUsername === currentUser.value.username)
-const isOpponentTurn = computed(() => !isMyTurn.value)
+const isOpponentTurn = computed(() => !isMyTurn)
 
 const currentUser: Ref<User> = ref({
   id: 1,
@@ -35,15 +35,10 @@ const currentUser: Ref<User> = ref({
   losses: 5,
   profilePicture: null,
 })
-const opponent: Ref<User> = ref({
-  id: 2,
-  username: 'Gegner',
-  mmr: 1000,
-  isAdmin: false,
-  wins: 0,
-  losses: 0,
-  profilePicture: null,
-})
+const currentUsername: Ref<string> = ref(currentUser.value.username)
+const opponent: Ref<User | null> = ref(null)
+const opponentUsername: Ref<string> = ref("Gegner")
+const latestMessage = ref<Message | null>(null)
 
 onMounted(async () => {
   checkAuth()
@@ -53,7 +48,8 @@ onMounted(async () => {
   let user = await fetchUser()
   if (user) {
     currentUser.value = user
-    console.log("fetched user:", currentUser.value.username);
+    currentUsername.value = user.username
+    console.log("fetched user:", currentUser.value.username)
   }
 
   startSocket()
@@ -84,7 +80,7 @@ async function startSocket () {
     newGameStarted(data)
   })
   socket.on('game.update', (data: Game) => {
-    console.log('Game update: ', data);
+    console.log('Game update: ', data)
     board.value = data.field
     // Update game state based on the received message
   })
@@ -94,8 +90,13 @@ async function startSocket () {
   })
   // Handle incoming chat messages in a game
   socket.on('game.message', (data) => {
+
     console.log('New message in game: ', data)
-    // Display the message to the user
+    latestMessage.value = {
+      username: data.username,
+      message: data.message,
+      time: new Date()
+    }
   })
   // Handle game end due to opponent disconnect
   socket.on('game.end.disconnected', (data) => {
@@ -130,7 +131,7 @@ function searchGame () {
 function newGameStarted (data: Game) {
   console.log('New game started: ', data)
   game.value = data
-  console.log("Current User: ", currentUser.value.username, "Player 1: ", data.player1Username, "Player 2: ", data.player2Username);
+  console.log("Current User: ", currentUser.value.username, "Player 1: ", data.player1Username, "Player 2: ", data.player2Username)
   // fill the opponent ref with the correct user. The user that is not the current user is the opponent
   if (currentUser.value.username === data.player1Username) {
     opponent.value = {
@@ -142,6 +143,7 @@ function newGameStarted (data: Game) {
       losses: 0,
       profilePicture: data.player2Username === "nuno_der" ? krabs : patrick,
     }
+    opponentUsername.value = data.player2Username
   } else {
     opponent.value = {
       id: 1,
@@ -152,6 +154,7 @@ function newGameStarted (data: Game) {
       losses: 0,
       profilePicture: data.player1Username === "nuno_der" ? krabs : patrick,
     }
+    opponentUsername.value = data.player1Username
   }
 }
 
@@ -168,6 +171,16 @@ function clickTile (rowIndex: number, cellIndex: number) {
     }
   }
 }
+
+const sendMessageOverSocket = async (username: string, messageText: string) => {
+  console.log('Sending message:', messageText)
+  let messageJSON = {
+    gameId: game.value?.gameId,
+    username: username,
+    message: messageText
+  }
+  socket.emit('game.message', messageJSON)
+}
 </script>
 
 <template>
@@ -176,13 +189,13 @@ function clickTile (rowIndex: number, cellIndex: number) {
       <div class="flex justify-start w-full items-end ml-2">
         <div class="text-sm flex flex-col items-center">
           <img
-            v-if="opponent.profilePicture"
+            v-if="opponent?.profilePicture"
             :src="opponent.profilePicture"
             alt="Profilbild"
             class="shadow-md w-10 h-10 rounded-full mt-0"
           >
           <svg
-            v-else
+            v-else-if="opponent !== null"
             xmlns="http://www.w3.org/2000/svg"
             width="48"
             height="48"
@@ -212,8 +225,8 @@ function clickTile (rowIndex: number, cellIndex: number) {
             </g>
           </svg>
         </div>
-        <div class="ml-2 font-bold">{{ opponent.username }}</div>
-        <div class="ml-1">({{opponent.mmr}})</div>
+        <div class="ml-2 font-bold">{{ opponent?.username }}</div>
+        <div class="ml-1">{{ "(" + opponent?.mmr ? opponent?.mmr : 1000 + ")" }}</div>
       </div>
       <div class="mb-2">{{ isOpponentTurn ? "Der Gegner ist am Zug!" : "" }}</div>
 
@@ -232,14 +245,14 @@ function clickTile (rowIndex: number, cellIndex: number) {
             class="cell"
             @click="clickTile(rowIndex, cellIndex)"
           >
-            {{ cell ? (cell === 1 ? 'X' : 'O') : ''}}
+            {{ cell ? (cell === 1 ? 'X' : 'O') : '' }}
           </div>
         </div>
       </div>
       <div class="mb-2">{{ isMyTurn ? "Du bist am Zug!" : "" }}</div>
 
       <div class="flex justify-start w-full items-end ml-2">
-        
+
         <div class="text-sm flex flex-col items-center">
           <img
             v-if="currentUser.profilePicture"
@@ -292,7 +305,12 @@ function clickTile (rowIndex: number, cellIndex: number) {
     </div>
 
     <div class="right rounded-xl">
-      <Chat />
+      <Chat
+        @message-send="sendMessageOverSocket"
+        :incomingMessage="latestMessage"
+        :username="currentUsername"
+        :opponent="opponentUsername"
+      />
     </div>
   </div>
 </template>

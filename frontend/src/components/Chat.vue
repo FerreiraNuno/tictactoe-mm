@@ -2,64 +2,58 @@
   setup
   lang="ts"
 >
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watchEffect, type Ref } from 'vue'
 
-interface Message {
+export interface Message {
   username: string
   message: string
   time: Date
 }
 
-const username = ref('user')
-const opponent = ref('user')
+// add emits
+const emit = defineEmits<{
+  (e: 'messageSend', username: string, messageText: string): void
+}>()
+
+const props = defineProps<{
+  incomingMessage: Message | null
+  username: string
+  opponent: string
+}>()
+
+
 const message = ref('')
 const output = ref<Message[]>([])
 
-onMounted(() => {
-  username.value = "nuno_der"
-  opponent.value = "the_law"
-
-  // Simulate a chat history
-  output.value = [
-    {
-      username: 'nuno_der',
-      message: 'Get rekt noob!',
-      time: new Date()
-    },
-    {
-      username: 'the_law',
-      message: 'im going to report you!',
-      time: new Date()
-    },
-    {
-      username: 'nuno_der',
-      message: 'How dare you?!',
-      time: new Date()
-    },
-    {
-      username: 'the_law',
-      message: ':)',
-      time: new Date()
+watchEffect(() => {
+  if (props.incomingMessage) {
+    console.log(props.incomingMessage.username, "compare", props.username)
+    if (props.incomingMessage.username !== props.username) {
+      output.value.push(props.incomingMessage)
     }
-  ]
+  }
 })
 
 
 const sendMessage = async () => {
-  console.log('Sending message:', message.value)
+  if (!message.value || message.value === "") return
   // append message to the output
   output.value.push({
-    username: username.value,
+    username: props.username,
     message: message.value,
     time: new Date()
+    // emit to parent
   })
+  emit('messageSend', props.username, message.value)
+  // clear the input
+  message.value = ''
 }
 </script>
 
 <template>
   <div class="chat-container">
     <div id="chat">
-      <h2>Chat with {{ opponent }}</h2>
+      <h2>Chat {{ opponent ? "mit " + opponent : "" }}</h2>
       <div id="chat-window">
         <div id="output">
           <div
@@ -82,6 +76,7 @@ const sendMessage = async () => {
             type="text"
             placeholder="Message"
             v-model="message"
+            @keyup.enter="sendMessage"
           />
         </div>
         <button
