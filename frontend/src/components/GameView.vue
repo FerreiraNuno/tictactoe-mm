@@ -147,7 +147,9 @@ function cancelQueue () {
     socket.disconnect()
     socket.connect()
     isInQueue.value = false
-    playersInQueue.value -= 1
+    if (playersInQueue.value > 0) {
+      playersInQueue.value -= 1
+    }
   } else {
     console.error('Socket not connected')
   }
