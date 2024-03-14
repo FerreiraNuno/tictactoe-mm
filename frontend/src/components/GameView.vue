@@ -22,6 +22,7 @@ let socket: Socket<DefaultEventsMap, DefaultEventsMap>
 //
 // Refs
 //
+// The board is only for representation of the game state. The game state is stored in the game ref
 const board: Ref<FieldStatus[][]> = ref([
   [0, 0, 0],
   [0, 0, 0],
@@ -37,16 +38,27 @@ const currentUser: Ref<User> = ref({
   profilePicture: null,
 })
 const opponent: Ref<User | null> = ref(null)
-const myusername: Ref<string> = ref(currentUser.value.username)
 const opponentUsername: Ref<string> = ref("Gegner")
 const latestMessage = ref<Message | null>(null)
 const game: Ref<Game | null> = ref(null)
 const playersInQueue = ref(0)
 const isInQueue = ref(false)
+const isGameOver: Ref<boolean | null> = ref(null)
 
 // computed properties
-const isMyTurn = computed(() => game.value ? game.value.currentUsername === myusername.value : false)
-const isOpponentTurn = computed(() => game.value ? game.value.currentUsername === opponentUsername.value : false)
+const isOpponentTurn = computed(() => (game.value && !isGameOver.value) ? game.value.currentUsername === opponentUsername.value : false)
+const isMyTurn = computed(() => (game.value && !isGameOver.value) ? game.value.currentUsername === currentUser.value.username : false)
+
+// watch effect which clears board when game is null
+watchEffect(() => {
+  if (!game.value) {
+    board.value = [
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0]
+    ]
+  }
+})
 
 // Gets called when the component is mounted
 onMounted(async () => {
@@ -57,10 +69,8 @@ onMounted(async () => {
   let user = await fetchUser()
   if (user) {
     currentUser.value = user
-    myusername.value = user.username
     console.log("fetched user:", currentUser.value.username)
   }
-
   startSocket()
 })
 
@@ -79,52 +89,28 @@ async function startSocket () {
     console.log('WebSocket connection closed', reason)
     game.value = null
   })
-  socket.io.on('error', (error) => {
-    console.error('Socket.IO connection error', error)
-  })
   socket.on('search.count', (data) => {
-    console.log('Number of players in queue: ', data.count)
     playersInQueue.value = data.count
   })
   socket.on('game.new', (data) => {
-    console.log('New game started: ', data)
     newGameStarted(data)
   })
   socket.on('game.update', (data: Game) => {
     console.log('Game update: ', data)
     board.value = data.field
-
-    // Update game state based on the received message
+    game.value = data
   })
   socket.on('game.move', (data) => {
-    console.log('Move made by player: ', data)
-    // Handle move logic here (update game state, check for win condition, etc.)
-  })
-  socket.on('game.message', (data) => {
-
-    console.log('New message in game: ', data)
-    latestMessage.value = {
-      username: data.username,
-      message: data.message,
-      time: new Date()
-    }
   })
   socket.on('game.end', (data) => {
-    console.log('Game is over: ', data)
-    // Handle cleanup, inform the user, possibly prompt for a new game
+    isGameOver.value = true
   })
   socket.on('game.end.disconnected', (data) => {
-    console.log('Game ended due to disconnect: ', data)
-    // Handle cleanup, inform the user, possibly prompt for a new game
+    isGameOver.value = true
   })
   socket.on('search.list', (data) => {
-    console.log('Players searching for a game: ', data)
-
-    // Admins might use this information to monitor or manage the matchmaking queue
   })
   socket.on('game.list.info', (data) => {
-    console.log('Current ongoing games: ', data)
-    // Admins might use this to monitor active games, possibly intervene or observe
   })
   socket.on('error', (errorMsg) => {
     console.error('Error: ', errorMsg)
@@ -132,6 +118,12 @@ async function startSocket () {
 }
 
 function searchGame () {
+  // if game reset refs
+  game.value = null
+  opponent.value = null
+  opponentUsername.value = "Gegner"
+  isGameOver.value = false
+
   if (socket) {
     console.log(); ('Starting search')
     socket.emit('search')
@@ -156,7 +148,6 @@ function cancelQueue () {
 }
 
 function newGameStarted (data: Game) {
-  console.log('New game started: ', data)
   game.value = data
   // fill the opponent ref with the correct user. The user that is not the current user is the opponent
   if (currentUser.value.username === data.player1Username) {
@@ -182,8 +173,9 @@ function newGameStarted (data: Game) {
     }
     opponentUsername.value = data.player1Username
   }
-  console.log('Current user: ', myusername.value)
-  console.log('Opponent: ', opponentUsername.value)
+  isGameOver.value = false
+  isInQueue.value = false
+  playersInQueue.value = 0
 }
 
 function clickTile (rowIndex: number, cellIndex: number) {
@@ -258,6 +250,9 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
         <div class="ml-2 font-bold">{{ opponent?.username }}</div>
         <div class="ml-1">{{ "(" + opponent?.mmr ? opponent?.mmr : 1000 + ")" }}</div>
       </div>
+
+
+
       <div
         id="tic-tac-toe"
         class="my-8"
@@ -325,7 +320,19 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
 
 
       </div>
-      <div class="py-8 font-black text-rose-400">{{ isMyTurn ? "Du bist am Zug!" : "" }}</div>
+      <div
+        v-if="isGameOver"
+        @click="searchGame"
+        to="/play"
+        class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 my-8 rounded-xl shadow-md"
+      >
+        Neues Spiel</div>
+      <div
+        v-else
+        class="py-8 font-black text-rose-400"
+      >{{ isMyTurn ? "Du bist am Zug!" : "" }}
+      </div>
+
     </div>
 
 
@@ -334,8 +341,8 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
       <Chat
         v-if="game"
         @message-send="sendMessageOverSocket"
-        :incomingMessage="latestMessage"
-        :username="myusername"
+        :socket="socket"
+        :username="currentUser.username"
         :opponent="opponentUsername"
       />
       <div
@@ -351,7 +358,7 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
           to="/play"
           class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md"
         >
-          Neues Spiel beginnen
+          Warteschlange beitreten
         </button>
         <button
           v-else-if="isInQueue"

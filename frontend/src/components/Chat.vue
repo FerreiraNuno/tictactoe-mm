@@ -2,6 +2,7 @@
   setup
   lang="ts"
 >
+import type { Socket } from 'socket.io-client'
 import { onMounted, ref, watchEffect, type Ref } from 'vue'
 
 export interface Message {
@@ -16,7 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  incomingMessage: Message | null
+  socket: Socket
   username: string
   opponent: string
 }>()
@@ -25,15 +26,34 @@ const props = defineProps<{
 const message = ref('')
 const output = ref<Message[]>([])
 
-watchEffect(() => {
-  if (props.incomingMessage) {
-    console.log(props.incomingMessage.username, "compare", props.username)
-    if (props.incomingMessage.username !== props.username) {
-      output.value.push(props.incomingMessage)
-    }
-  }
-})
 
+onMounted(() => {
+  props.socket.on('game.message', (data) => {
+    if (data.username !== props.username) {
+      output.value.push({
+        username: data.username,
+        message: data.message,
+        time: new Date()
+      })
+    }
+
+  })
+  props.socket.on('game.end', (data) => {
+    console.log("Game ended.: ", data)
+    output.value.push({
+      username: "server",
+      message: `${data.winner ? "Winner: " + data.winner : "It's a draw."}`,
+      time: new Date()
+    })
+  })
+  props.socket.on('game.end.disconnected', (data) => {
+    output.value.push({
+      username: "server",
+      message: "Game ended due to disconnect.",
+      time: new Date()
+    })
+  })
+})
 
 const sendMessage = async () => {
   if (!message.value || message.value === "") return
@@ -45,6 +65,7 @@ const sendMessage = async () => {
     // emit to parent
   })
   emit('messageSend', props.username, message.value)
+
   // clear the input
   message.value = ''
 }
@@ -59,7 +80,7 @@ const sendMessage = async () => {
           <div
             v-for="(msg, index) in output"
             :key="index"
-            :class="{ 'message': true, 'message-own': msg.username === username, 'message-other': msg.username !== username }"
+            :class="{ 'message': true, 'message-own': msg.username === username, 'message-other': msg.username !== username, 'font-black text-rose-600': msg.username === 'server' }"
           >
             <p>{{ msg.message }}</p>
             <span class="timestamp">{{ new Date(msg.time).toLocaleTimeString([], {
@@ -239,7 +260,6 @@ button {
   padding: 10px 12px;
   border-radius: 7.5px;
   max-width: 60%;
-  color: #303030;
   box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   margin: 0 0 2px 0;
 }
