@@ -3,14 +3,13 @@ import {
     WebSocketGateway,
     OnGatewayConnection,
     OnGatewayDisconnect,
-    WebSocketServer, OnGatewayInit, WsResponse, BaseWsExceptionFilter
+    WebSocketServer, OnGatewayInit
 } from '@nestjs/websockets';
 import {Server, Socket} from 'socket.io';
 import {UserService} from 'src/services/user/user.service';
 import {AuthService} from "../../services/auth/auth.service";
 import {GameService} from "../../services/game/game.service";
 import {MakeMoveDTO} from "../../models/DTO/MakeMoveDTO";
-import {UseFilters} from "@nestjs/common";
 import {InGameMassageDTO} from "../../models/DTO/InGameMassageDTO";
 
 @WebSocketGateway({

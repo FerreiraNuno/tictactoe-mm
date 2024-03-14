@@ -2,17 +2,22 @@
   setup
   lang="ts"
 >
-import { onMounted, ref, watch, watchEffect, type Ref } from 'vue'
 import Chat from './Chat.vue'
 import useAuth from '@/helpers/auth'
-import { useRouter } from 'vue-router'
-import { fetchUser, type User } from '@/helpers/user'
 const router = useRouter()
+import { onMounted, ref, watch, watchEffect, type Ref } from 'vue'
+import { Socket, io } from "socket.io-client"
+import { fetchUser, type User } from '@/helpers/user'
+import { useRouter } from 'vue-router'
 const { isLoggedIn, checkAuth } = useAuth()
-import { io } from "socket.io-client"
+import { board, makeMove } from "@/helpers/board";
 
 import krabs from '@/assets/krabs.png'
 import patrick from '@/assets/patrick.png'
+import Cookies from 'js-cookie'
+import type { DefaultEventsMap } from '@socket.io/component-emitter';
+
+let socket: Socket<DefaultEventsMap, DefaultEventsMap>
 
 const currentUser: Ref<User> = ref({
   id: 1,
@@ -34,11 +39,25 @@ onMounted(async () => {
     currentUser.value = user
   }
 
-  const socket = io('http://localhost:3000', { path: '/socket.io' })
+  startSocket()
+})
+
+async function startSocket () {
+  const jwtToken = Cookies.get('jwtToken')
+  socket = io('http://localhost:3000', {
+  auth: {
+    jwtToken: jwtToken
+  }
+});
   socket.on("connect", () => {
     console.log(`Connected to the server with Socket ID: ${socket.id}`)
-    // Example: Emit a 'search' event to the server
-    socket.emit('search')
+  })
+
+  socket.on('disconnect', (reason) => {
+    console.log('WebSocket connection closed', reason)
+  })
+  socket.io.on('error', (error) => {
+    console.error('Socket.IO connection error', error)
   })
 
   socket.on('search.count', (data) => {
@@ -57,59 +76,18 @@ onMounted(async () => {
   socket.on('error', (errorMsg) => {
     console.error('Error: ', errorMsg)
   })
-  // Socket.IO handles the connection and error events differently than the WebSocket API
-  socket.on('connect', () => {
-    console.log('Connected to the server')
-  })
-  socket.on('disconnect', (reason) => {
-    console.log('WebSocket connection closed', reason)
-  })
-  socket.io.on('error', (error) => {
-    console.error('Socket.IO connection error', error)
-  })
-
-
-})
-
-const board = ref([
-  ['', '', ''],
-  ['', '', ''],
-  ['', '', '']
-])
-
-const currentPlayer = ref<'X' | 'O'>('X')
-const winner = ref<string | null>(null)
-
-function makeMove (row: number, col: number): void {
-  if (board.value[row][col] !== '' || winner.value !== null) {
-    return
-  }
-
-  board.value[row][col] = currentPlayer.value
-
-  checkWinner()
-
-  currentPlayer.value = currentPlayer.value === 'X' ? 'O' : 'X'
 }
 
-function checkWinner (): void {
-  for (let i = 0; i < 3; i++) {
-    if (board.value[i][0] === board.value[i][1] && board.value[i][1] === board.value[i][2] && board.value[i][0] !== '') {
-      winner.value = board.value[i][0]
-      return
-    }
-
-    if (board.value[0][i] === board.value[1][i] && board.value[1][i] === board.value[2][i] && board.value[0][i] !== '') {
-      winner.value = board.value[0][i]
-      return
-    }
-  }
-
-  if ((board.value[0][0] === board.value[1][1] && board.value[1][1] === board.value[2][2] && board.value[0][0] !== '') ||
-    (board.value[0][2] === board.value[1][1] && board.value[1][1] === board.value[2][0] && board.value[0][2] !== '')) {
-    winner.value = board.value[1][1]
+function startGame () {
+  if (socket) {
+    console.log();('Starting search')
+    socket.emit('search')
+  } else {
+    console.error('Socket not connected')
+  
   }
 }
+
 </script>
 
 <template>
@@ -219,6 +197,7 @@ function checkWinner (): void {
         <div class="ml-1">({{ currentUser.mmr }})</div>
       </div>
       <button
+        @click="startGame"
         to="/play"
         class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md mt-16"
       >
