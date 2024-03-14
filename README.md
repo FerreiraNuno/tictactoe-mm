@@ -26,7 +26,7 @@ InGameMassageDTO {
 - `search.count` Gives you the number of player in the queue
 ```
 {
-    count: this.inSearchQueue.size
+    count: this.inSearchQueue.sizeoo
 }
 ```
 - `search.list` ADMINS ONLY: Gives you information about who is searching for a game
