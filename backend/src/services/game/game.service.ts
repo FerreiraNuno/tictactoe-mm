@@ -37,6 +37,7 @@ export class GameService {
             bearerToken = client.handshake.auth.jwtToken
             if (!bearerToken) {
                 client.disconnect()
+                return
                 // throw new WsException("no user token found")
             }
         }
