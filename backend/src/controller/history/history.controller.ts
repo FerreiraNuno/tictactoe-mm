@@ -11,6 +11,7 @@ import {GameResultDTO} from "../../models/DTO/GameResultDTO";
 import {User} from "../../models/db-models/User";
 import {WinLoseDTO} from "../../models/DTO/WinLoseDTO";
 import {IsAdminGuard} from "../../middleware/is-admin/is-admin-guard.service";
+import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
 
 @Controller("/api/v1/history")
 @ApiTags('history')
@@ -34,9 +35,10 @@ export class HistoryController {
     @UseGuards(IsAdminGuard)
     async getGameHistoryOfSpecificPlayer(@Req() req: Request, @Param('id') id: number): Promise<GameResultDTO[]> {
         await this.userService.getUsersById(id)
+        const allUsers: UserInfoDTO[] = await this.userService.getAllUsers()
         const result: GameResultDTO[] = []
         for (const gameResult of await this.resultService.getUserMatchesOfUser(id)) {
-            result.push(GameResultDTO.ofGameResult(gameResult))
+            result.push(GameResultDTO.ofGameResult(gameResult, allUsers))
         }
         return result
     }
@@ -52,9 +54,10 @@ export class HistoryController {
     @UseGuards(IsLoggedInGuard)
     async getGameHistory(@Req() req: Request): Promise<GameResultDTO[]> {
         const user: User = await this.userService.getUserByRequest(req)
+        const allUsers: UserInfoDTO[] = await this.userService.getAllUsers()
         const result: GameResultDTO[] = []
         for (const gameResult of await this.resultService.getUserMatchesOfUser(user.id)) {
-            result.push(GameResultDTO.ofGameResult(gameResult))
+            result.push(GameResultDTO.ofGameResult(gameResult, allUsers))
         }
         return result
     }
