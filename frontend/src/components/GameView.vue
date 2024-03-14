@@ -17,29 +17,38 @@ const router = useRouter()
 const { isLoggedIn, checkAuth } = useAuth()
 
 let socket: Socket<DefaultEventsMap, DefaultEventsMap>
-const game: Ref<Game | null> = ref(null)
+
+
+//
+// Refs
+//
 const board: Ref<FieldStatus[][]> = ref([
   [0, 0, 0],
   [0, 0, 0],
   [0, 0, 0]
 ])
-const isMyTurn = computed(() => game.value?.currentUsername === currentUser.value.username)
-const isOpponentTurn = computed(() => !isMyTurn)
-
 const currentUser: Ref<User> = ref({
   id: 1,
-  username: 'No User Found',
+  username: 'Not logged in',
   mmr: 1000,
   isAdmin: false,
-  wins: 10,
-  losses: 5,
+  wins: 0,
+  losses: 0,
   profilePicture: null,
 })
-const currentUsername: Ref<string> = ref(currentUser.value.username)
 const opponent: Ref<User | null> = ref(null)
+const myusername: Ref<string> = ref(currentUser.value.username)
 const opponentUsername: Ref<string> = ref("Gegner")
 const latestMessage = ref<Message | null>(null)
+const game: Ref<Game | null> = ref(null)
+const playersInQueue = ref(0)
+const isInQueue = ref(false)
 
+// computed properties
+const isMyTurn = computed(() => game.value ? game.value.currentUsername === myusername.value : false)
+const isOpponentTurn = computed(() => game.value ? game.value.currentUsername === opponentUsername.value : false)
+
+// Gets called when the component is mounted
 onMounted(async () => {
   checkAuth()
   if (!isLoggedIn.value) {
@@ -48,13 +57,14 @@ onMounted(async () => {
   let user = await fetchUser()
   if (user) {
     currentUser.value = user
-    currentUsername.value = user.username
+    myusername.value = user.username
     console.log("fetched user:", currentUser.value.username)
   }
 
   startSocket()
 })
 
+// Starts the socket connection and listens to all messages
 async function startSocket () {
   const jwtToken = Cookies.get('jwtToken')
   socket = io('http://localhost:3000', {
@@ -65,15 +75,16 @@ async function startSocket () {
   socket.on("connect", () => {
     console.log(`Connected to the server with Socket ID: ${socket.id}`)
   })
-
   socket.on('disconnect', (reason) => {
     console.log('WebSocket connection closed', reason)
+    game.value = null
   })
   socket.io.on('error', (error) => {
     console.error('Socket.IO connection error', error)
   })
   socket.on('search.count', (data) => {
     console.log('Number of players in queue: ', data.count)
+    playersInQueue.value = data.count
   })
   socket.on('game.new', (data) => {
     console.log('New game started: ', data)
@@ -82,13 +93,13 @@ async function startSocket () {
   socket.on('game.update', (data: Game) => {
     console.log('Game update: ', data)
     board.value = data.field
+
     // Update game state based on the received message
   })
   socket.on('game.move', (data) => {
     console.log('Move made by player: ', data)
     // Handle move logic here (update game state, check for win condition, etc.)
   })
-  // Handle incoming chat messages in a game
   socket.on('game.message', (data) => {
 
     console.log('New message in game: ', data)
@@ -98,17 +109,19 @@ async function startSocket () {
       time: new Date()
     }
   })
-  // Handle game end due to opponent disconnect
+  socket.on('game.end', (data) => {
+    console.log('Game is over: ', data)
+    // Handle cleanup, inform the user, possibly prompt for a new game
+  })
   socket.on('game.end.disconnected', (data) => {
     console.log('Game ended due to disconnect: ', data)
     // Handle cleanup, inform the user, possibly prompt for a new game
   })
-  // For Admins: Get the list of players currently searching for a game
   socket.on('search.list', (data) => {
     console.log('Players searching for a game: ', data)
+
     // Admins might use this information to monitor or manage the matchmaking queue
   })
-  // For Admins: Get the list of ongoing games
   socket.on('game.list.info', (data) => {
     console.log('Current ongoing games: ', data)
     // Admins might use this to monitor active games, possibly intervene or observe
@@ -122,16 +135,27 @@ function searchGame () {
   if (socket) {
     console.log(); ('Starting search')
     socket.emit('search')
+    isInQueue.value = true
   } else {
     console.error('Socket not connected')
+  }
+}
 
+function cancelQueue () {
+  if (socket) {
+    // disconnect and reconnect to socket
+    socket.disconnect()
+    socket.connect()
+    isInQueue.value = false
+    playersInQueue.value -= 1
+  } else {
+    console.error('Socket not connected')
   }
 }
 
 function newGameStarted (data: Game) {
   console.log('New game started: ', data)
   game.value = data
-  console.log("Current User: ", currentUser.value.username, "Player 1: ", data.player1Username, "Player 2: ", data.player2Username)
   // fill the opponent ref with the correct user. The user that is not the current user is the opponent
   if (currentUser.value.username === data.player1Username) {
     opponent.value = {
@@ -156,6 +180,8 @@ function newGameStarted (data: Game) {
     }
     opponentUsername.value = data.player1Username
   }
+  console.log('Current user: ', myusername.value)
+  console.log('Opponent: ', opponentUsername.value)
 }
 
 function clickTile (rowIndex: number, cellIndex: number) {
@@ -185,7 +211,9 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
 
 <template>
   <div class="container">
-    <div class="left rounded-xl flex flex-col px-16 pt-4">
+    <div class="left rounded-xl px-16">
+      <div class="py-8 font-black text-indigo-600">{{ isOpponentTurn ? "Der Gegner ist am Zug!" : "" }}</div>
+
       <div class="flex justify-start w-full items-end ml-2">
         <div class="text-sm flex flex-col items-center">
           <img
@@ -228,8 +256,6 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
         <div class="ml-2 font-bold">{{ opponent?.username }}</div>
         <div class="ml-1">{{ "(" + opponent?.mmr ? opponent?.mmr : 1000 + ")" }}</div>
       </div>
-      <div class="mb-2">{{ isOpponentTurn ? "Der Gegner ist am Zug!" : "" }}</div>
-
       <div
         id="tic-tac-toe"
         class="my-8"
@@ -249,7 +275,8 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
           </div>
         </div>
       </div>
-      <div class="mb-2">{{ isMyTurn ? "Du bist am Zug!" : "" }}</div>
+
+
 
       <div class="flex justify-start w-full items-end ml-2">
 
@@ -293,24 +320,43 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
         </div>
         <div class="ml-2 font-bold">{{ currentUser.username }}</div>
         <div class="ml-1">({{ currentUser.mmr }})</div>
+
+
       </div>
-      <button
-        v-if="!game"
-        @click="searchGame"
-        to="/play"
-        class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md mt-16"
-      >
-        Neues Spiel beginnen
-      </button>
+      <div class="py-8 font-black text-rose-400">{{ isMyTurn ? "Du bist am Zug!" : "" }}</div>
     </div>
+
+
 
     <div class="right rounded-xl">
       <Chat
+        v-if="game"
         @message-send="sendMessageOverSocket"
         :incomingMessage="latestMessage"
-        :username="currentUsername"
+        :username="myusername"
         :opponent="opponentUsername"
       />
+      <div
+        v-else
+        class="flex flex-col justify-center items-center h-full w-full"
+      >
+        <div class="m-6 font-bold">
+          Spieler in Warteschlange: {{ playersInQueue }}
+        </div>
+        <button
+          v-if="!game && !isInQueue"
+          @click="searchGame"
+          to="/play"
+          class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md"
+        >
+          Neues Spiel beginnen
+        </button>
+        <button
+          v-else-if="isInQueue"
+          @click="cancelQueue"
+          class="bg-rose-500 hover:bg-rose-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md"
+        >Abbrechen</button>
+      </div>
     </div>
   </div>
 </template>
@@ -328,8 +374,9 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
 .left {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-around;
   border: 1px solid #e5e5e5;
   margin-right: 2rem;
   background-color: white;

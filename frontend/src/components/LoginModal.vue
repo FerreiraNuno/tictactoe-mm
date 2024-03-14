@@ -36,7 +36,8 @@ const submitForm = async (e: Event) => {
         throw new Error('Network response was not ok')
       }
       const data = await response.json()
-      Cookies.set('jwtToken', data.jwtToken, { expires: 1 }) // Expires in 1 day
+      console.log('jwtToken::', data)
+      Cookies.set('jwtToken', "data.jwtToken", { expires: 1 }) // Expires in 1 day
       setTimeout(() => {
         router.push('/play')
       }, 200)
