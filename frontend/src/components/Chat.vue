@@ -236,9 +236,8 @@ button {
   background: #ffffff;
   padding: 10px;
   height: 0;
-  /* New */
   min-height: 0;
-  /* New */
+
 }
 
 #output .message {
