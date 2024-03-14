@@ -2,7 +2,7 @@
   lang="ts"
   setup
 >
-import { fetchAllUsers, fetchUser, type User } from '@/helpers/user'
+import { fetchAllUsers, fetchUser, uploadProfilePicture, type User } from '@/helpers/user'
 import Cookies from 'js-cookie'
 import { onMounted, ref, type Ref } from 'vue'
 import krabs from '@/assets/krabs.png'
@@ -18,6 +18,8 @@ const currentUser: Ref<User> = ref({
   profilePicture: '../assets/profile.jpeg.',
 })
 const allUsers: Ref<User[]> = ref([])
+const selectedFile: Ref<File | null> = ref(null)
+const profilePictureError: Ref<string> = ref('')
 
 onMounted(async () => {
   let user = await fetchUser()
@@ -170,11 +172,22 @@ const changePassword = async (e: Event) => {
 
 //Upload Profile Picture
 const showProfilePictureModal = ref(false)
-const profilePictureError = ref('')
 
-const uploadProfilePicture = async (e: Event) => {
-  e.preventDefault()
+const submitUpload = async () => {
+  console.log(selectedFile.value)
+  if (selectedFile.value) uploadProfilePicture(selectedFile.value.name, currentUser.value.id)
+}
 
+function handleFileSelect (event: Event) {
+  // Access the file from the input element
+  const input = event.target as HTMLInputElement
+
+  // Now, TypeScript knows that input has a 'files' property
+  if (input.files && input.files.length > 0) {
+    const file = input.files[0];
+    selectedFile.value = file;
+    submitUpload()
+  }
 }
 
 const adminView = ref(false)
@@ -189,10 +202,7 @@ const adminView = ref(false)
       <div class="modal-container">
         <h2 class="modal-title">Profilbild hochladen</h2>
         <div class="modal-body">
-          <form
-            @submit.prevent="uploadProfilePicture"
-            class="p-9"
-          >
+          <form class="p-9">
             <label
               for="profilePictureUpload"
               class="block mb-4"
@@ -202,6 +212,7 @@ const adminView = ref(false)
                 type="file"
                 id="profilePictureUpload"
                 ref="profilePictureInput"
+                @change="handleFileSelect"
                 class="block w-full rounded-md border-0 p-1.5 mb-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
               >
             </label>

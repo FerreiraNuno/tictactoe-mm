@@ -2,31 +2,47 @@
   setup
   lang="ts"
 >
+import { makeMoveOnBoard, type Game, FieldStatus } from "@/helpers/board"
 import Chat from './Chat.vue'
 import useAuth from '@/helpers/auth'
-const router = useRouter()
-import { onMounted, ref, watch, watchEffect, type Ref } from 'vue'
+import { onMounted, ref, watch, watchEffect, type Ref, computed } from 'vue'
 import { Socket, io } from "socket.io-client"
 import { fetchUser, type User } from '@/helpers/user'
 import { useRouter } from 'vue-router'
-const { isLoggedIn, checkAuth } = useAuth()
-import { board, makeMove } from "@/helpers/board";
-
+import Cookies from 'js-cookie'
+import type { DefaultEventsMap } from '@socket.io/component-emitter'
 import krabs from '@/assets/krabs.png'
 import patrick from '@/assets/patrick.png'
-import Cookies from 'js-cookie'
-import type { DefaultEventsMap } from '@socket.io/component-emitter';
+const router = useRouter()
+const { isLoggedIn, checkAuth } = useAuth()
 
 let socket: Socket<DefaultEventsMap, DefaultEventsMap>
+const game: Ref<Game | null> = ref(null)
+const board: Ref<FieldStatus[][]> = ref([
+  [0, 0, 0],
+  [0, 0, 0],
+  [0, 0, 0]
+])
+const isMyTurn = computed(() => game.value?.currentUsername === currentUser.value.username)
+const isOpponentTurn = computed(() => !isMyTurn.value)
 
 const currentUser: Ref<User> = ref({
   id: 1,
   username: 'No User Found',
   mmr: 1000,
-  isAdmin: true,
+  isAdmin: false,
   wins: 10,
   losses: 5,
-  profilePicture: '../assets/profile.jpeg.',
+  profilePicture: null,
+})
+const opponent: Ref<User> = ref({
+  id: 2,
+  username: 'Gegner',
+  mmr: 1000,
+  isAdmin: false,
+  wins: 0,
+  losses: 0,
+  profilePicture: null,
 })
 
 onMounted(async () => {
@@ -37,6 +53,7 @@ onMounted(async () => {
   let user = await fetchUser()
   if (user) {
     currentUser.value = user
+    console.log("fetched user:", currentUser.value.username);
   }
 
   startSocket()
@@ -45,10 +62,10 @@ onMounted(async () => {
 async function startSocket () {
   const jwtToken = Cookies.get('jwtToken')
   socket = io('http://localhost:3000', {
-  auth: {
-    jwtToken: jwtToken
-  }
-});
+    auth: {
+      jwtToken: jwtToken
+    }
+  })
   socket.on("connect", () => {
     console.log(`Connected to the server with Socket ID: ${socket.id}`)
   })
@@ -59,35 +76,98 @@ async function startSocket () {
   socket.io.on('error', (error) => {
     console.error('Socket.IO connection error', error)
   })
-
   socket.on('search.count', (data) => {
     console.log('Number of players in queue: ', data.count)
   })
   socket.on('game.new', (data) => {
     console.log('New game started: ', data)
-    // Handle new game setup here
+    newGameStarted(data)
   })
-  socket.on('game.update', (data) => {
+  socket.on('game.update', (data: Game) => {
+    console.log('Game update: ', data);
+    board.value = data.field
     // Update game state based on the received message
   })
-  socket.on('game.end', (data) => {
-    // Handle game end
+  socket.on('game.move', (data) => {
+    console.log('Move made by player: ', data)
+    // Handle move logic here (update game state, check for win condition, etc.)
+  })
+  // Handle incoming chat messages in a game
+  socket.on('game.message', (data) => {
+    console.log('New message in game: ', data)
+    // Display the message to the user
+  })
+  // Handle game end due to opponent disconnect
+  socket.on('game.end.disconnected', (data) => {
+    console.log('Game ended due to disconnect: ', data)
+    // Handle cleanup, inform the user, possibly prompt for a new game
+  })
+  // For Admins: Get the list of players currently searching for a game
+  socket.on('search.list', (data) => {
+    console.log('Players searching for a game: ', data)
+    // Admins might use this information to monitor or manage the matchmaking queue
+  })
+  // For Admins: Get the list of ongoing games
+  socket.on('game.list.info', (data) => {
+    console.log('Current ongoing games: ', data)
+    // Admins might use this to monitor active games, possibly intervene or observe
   })
   socket.on('error', (errorMsg) => {
     console.error('Error: ', errorMsg)
   })
 }
 
-function startGame () {
+function searchGame () {
   if (socket) {
-    console.log();('Starting search')
+    console.log(); ('Starting search')
     socket.emit('search')
   } else {
     console.error('Socket not connected')
-  
+
   }
 }
 
+function newGameStarted (data: Game) {
+  console.log('New game started: ', data)
+  game.value = data
+  console.log("Current User: ", currentUser.value.username, "Player 1: ", data.player1Username, "Player 2: ", data.player2Username);
+  // fill the opponent ref with the correct user. The user that is not the current user is the opponent
+  if (currentUser.value.username === data.player1Username) {
+    opponent.value = {
+      id: 2,
+      username: data.player2Username,
+      mmr: 1000,
+      isAdmin: false,
+      wins: 0,
+      losses: 0,
+      profilePicture: data.player2Username === "nuno_der" ? krabs : patrick,
+    }
+  } else {
+    opponent.value = {
+      id: 1,
+      username: data.player1Username,
+      mmr: 1000,
+      isAdmin: false,
+      wins: 0,
+      losses: 0,
+      profilePicture: data.player1Username === "nuno_der" ? krabs : patrick,
+    }
+  }
+}
+
+function clickTile (rowIndex: number, cellIndex: number) {
+  if (game.value && socket) {
+    const move = makeMoveOnBoard(rowIndex, cellIndex, 1, game.value.field)
+    if (move) {
+      let moveJson = {
+        gameId: game.value.gameId,
+        xPos: rowIndex,
+        yPos: cellIndex
+      }
+      socket.emit('game.move', moveJson)
+    }
+  }
+}
 </script>
 
 <template>
@@ -96,8 +176,8 @@ function startGame () {
       <div class="flex justify-start w-full items-end ml-2">
         <div class="text-sm flex flex-col items-center">
           <img
-            v-if="currentUser.profilePicture"
-            :src="patrick"
+            v-if="opponent.profilePicture"
+            :src="opponent.profilePicture"
             alt="Profilbild"
             class="shadow-md w-10 h-10 rounded-full mt-0"
           >
@@ -132,9 +212,11 @@ function startGame () {
             </g>
           </svg>
         </div>
-        <div class="ml-2 font-bold">Gegner</div>
-        <div class="ml-1">(1000)</div>
+        <div class="ml-2 font-bold">{{ opponent.username }}</div>
+        <div class="ml-1">({{opponent.mmr}})</div>
       </div>
+      <div class="mb-2">{{ isOpponentTurn ? "Der Gegner ist am Zug!" : "" }}</div>
+
       <div
         id="tic-tac-toe"
         class="my-8"
@@ -148,17 +230,20 @@ function startGame () {
             v-for="(cell, cellIndex) in row"
             :key="cellIndex"
             class="cell"
-            @click="makeMove(rowIndex, cellIndex)"
+            @click="clickTile(rowIndex, cellIndex)"
           >
-            {{ cell }}
+            {{ cell ? (cell === 1 ? 'X' : 'O') : ''}}
           </div>
         </div>
       </div>
+      <div class="mb-2">{{ isMyTurn ? "Du bist am Zug!" : "" }}</div>
+
       <div class="flex justify-start w-full items-end ml-2">
+        
         <div class="text-sm flex flex-col items-center">
           <img
             v-if="currentUser.profilePicture"
-            :src="krabs"
+            :src="currentUser.profilePicture"
             alt="Profilbild"
             class="shadow-md w-10 h-10 rounded-full mt-0"
           >
@@ -197,7 +282,8 @@ function startGame () {
         <div class="ml-1">({{ currentUser.mmr }})</div>
       </div>
       <button
-        @click="startGame"
+        v-if="!game"
+        @click="searchGame"
         to="/play"
         class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md mt-16"
       >

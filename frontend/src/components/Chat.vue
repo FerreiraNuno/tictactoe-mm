@@ -47,6 +47,12 @@ onMounted(() => {
 
 const sendMessage = async () => {
   console.log('Sending message:', message.value)
+  // append message to the output
+  output.value.push({
+    username: username.value,
+    message: message.value,
+    time: new Date()
+  })
 }
 </script>
 

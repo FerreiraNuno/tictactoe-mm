@@ -1,3 +1,4 @@
+import exp from "constants"
 import Cookies from "js-cookie"
 
 export interface User {
@@ -7,8 +8,11 @@ export interface User {
   isAdmin: boolean
   wins: number
   losses: number
-  profilePicture: string
+  profilePicture?: string | null
 }
+
+import krabs from '@/assets/krabs.png'
+import patrick from '@/assets/patrick.png'
 
 
 export async function fetchUser (): Promise<User | null> {
@@ -42,7 +46,7 @@ export async function fetchUser (): Promise<User | null> {
       isAdmin: userData.isAdmin,
       wins: 10,
       losses: 5,
-      profilePicture: "../assets/icon.png",
+      profilePicture: userData.id == 1 ? krabs : patrick,
     }
 
   } catch (error: any) {
@@ -67,6 +71,31 @@ export async function fetchAllUsers (): Promise<User[] | null> {
     })
     if (!response.ok) {
       throw new Error('Failed to fetch user data. Please check your authentication token.')
+    }
+    return await response.json()
+  } catch (error: any) {
+    console.error('Error:', error.message)
+    return null
+  }
+}
+
+export async function uploadProfilePicture (path: string, id: number): Promise<string | null> {
+  try {
+    const jwtToken = Cookies.get('jwtToken')
+    if (!jwtToken) {
+      throw new Error('Authentication token not found. Please login first.')
+    }
+    const response = await fetch(`http://localhost:3000/api/v1/user/${id}/upload-image`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path }),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to upload profile picture. Please check your authentication token.')
     }
     return await response.json()
   } catch (error: any) {
