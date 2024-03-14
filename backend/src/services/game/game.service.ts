@@ -306,7 +306,7 @@ export class GameService {
     private emitUpdateGamesList() {
         const gameListInfo = this.getGameListInfo()
         for (const wsConnection of this.wsConnections.values()) {
-            if (wsConnection.user.isAdmin) {
+            if (wsConnection.user?.isAdmin) {
                 wsConnection.client.emit("game.list.info", gameListInfo)
             }
         }
@@ -317,9 +317,11 @@ export class GameService {
         for (const gameEntry of this.games) {
             const [gameId, game] = gameEntry;
             const gameInfo = new GameInfoDTO()
+            console.log("Game LOG:",game);
+            
             gameInfo.gameId = gameId
-            gameInfo.player1 = UserInfoDTO.fromUser(game.player1.user)
-            gameInfo.player2 = UserInfoDTO.fromUser(game.player2.user)
+            if (game.player1) gameInfo.player1 = UserInfoDTO.fromUser(game.player1.user)
+            if (game.player2) gameInfo.player2 = UserInfoDTO.fromUser(game.player2.user)
             gameListInfo.push(gameInfo)
         }
         return gameListInfo
