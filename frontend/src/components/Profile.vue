@@ -2,24 +2,50 @@
   lang="ts"
   setup
 >
-import { fetchAllUsers, fetchUser, uploadProfilePicture, type User } from '@/helpers/user'
+import { fetchAllUsers, fetchUser, uploadProfilePicture, type User, type UserInfo, type GameInfo } from '@/helpers/user'
 import Cookies from 'js-cookie'
 import { onMounted, ref, type Ref } from 'vue'
 import krabs from '@/assets/krabs.png'
+import { io, type Socket } from 'socket.io-client'
+import type { DefaultEventsMap } from '@socket.io/component-emitter'
 
 
+let socket: Socket<DefaultEventsMap, DefaultEventsMap>
 const currentUser: Ref<User> = ref({
   id: 1,
   username: 'No User Found',
-  mmr: 1000,
+  mmr: 0,
   isAdmin: true,
   wins: 10,
   losses: 5,
   profilePicture: '../assets/profile.jpeg.',
 })
+interface WinLoseRate {
+  wins: number
+  losses: number
+  winLoseRate: number
+  total: number
+  draws: number
+}
+interface Games {
+  id: number
+  player1: number
+  player1mmr: number
+  player2: number
+  player2mmr: number
+  result: string
+}
 const allUsers: Ref<User[]> = ref([])
 const selectedFile: Ref<File | null> = ref(null)
 const profilePictureError: Ref<string> = ref('')
+const gameQueue: Ref<UserInfo[]> = ref([])
+const currentGames: Ref<GameInfo[]> = ref([])
+const showPasswordModal = ref(false)
+const newPassword = ref('')
+const confirmPassword = ref('')
+const passwordChangeError = ref('')
+const adminView = ref(false)
+const showProfilePictureModal = ref(false)
 
 onMounted(async () => {
   let user = await fetchUser()
@@ -33,13 +59,38 @@ onMounted(async () => {
   await fetchGameHistory()
   await fetchGameQueue()
   await fetchWinLoseRate()
+
+  if (currentUser.value.isAdmin) {
+    adminView.value = true
+    startSocket()
+  }
 })
-// define user type
 
+// Start socket connection
+function startSocket () {
+  const jwtToken = Cookies.get('jwtToken')
+  socket = io('http://localhost:3000', {
+    auth: {
+      jwtToken: jwtToken
+    }
+  })
+  socket.on("connect", () => {
+    console.log(`Connected to the server with Socket ID: ${socket.id}`)
+  })
+  socket.on("disconnect", () => {
+    console.log(`Disconnected from the server with Socket ID: ${socket.id}`)
+  })
+  socket.on("search.list", (data: UserInfo[]) => {
+    gameQueue.value = data
+  })
 
+  socket.on("game.list.info", (data: GameInfo[]) => {
+    console.log(data)
+    currentGames.value = data
+  })
+}
 
 // Fetch game queue
-const gameQueue: Ref<User[]> = ref([])
 async function fetchGameQueue () {
   try {
     const jwtToken = Cookies.get('jwtToken')
@@ -57,20 +108,15 @@ async function fetchGameQueue () {
     if (!response.ok) {
       throw new Error('Failed to fetch game queue. Please check your authentication token.')
     }
-    gameQueue.value = await response.json()
+    let users = await response.json()
+    gameQueue.value = users
+
   } catch (error: any) {
     console.error('Error:', error.message)
   }
 }
 
 // Fetch win-lose rate
-interface WinLoseRate {
-  wins: number
-  losses: number
-  winLoseRate: number
-  total: number
-  draws: number
-}
 const winLoseRate = ref({} as WinLoseRate)
 async function fetchWinLoseRate () {
   try {
@@ -96,14 +142,6 @@ async function fetchWinLoseRate () {
 }
 
 // Fetch game history
-interface Games {
-  id: number
-  player1: number
-  player1mmr: number
-  player2: number
-  player2mmr: number
-  result: string
-}
 const games = ref([] as Games[])
 async function fetchGameHistory () {
   try {
@@ -129,10 +167,6 @@ async function fetchGameHistory () {
 }
 
 //Ändern des Passworts
-const showPasswordModal = ref(false)
-const newPassword = ref('')
-const confirmPassword = ref('')
-const passwordChangeError = ref('')
 const changePassword = async (e: Event) => {
   e.preventDefault()
   if (newPassword.value.trim() === '' || confirmPassword.value.trim() === '') {
@@ -171,7 +205,6 @@ const changePassword = async (e: Event) => {
 }
 
 //Upload Profile Picture
-const showProfilePictureModal = ref(false)
 
 const submitUpload = async () => {
   console.log(selectedFile.value)
@@ -184,13 +217,12 @@ function handleFileSelect (event: Event) {
 
   // Now, TypeScript knows that input has a 'files' property
   if (input.files && input.files.length > 0) {
-    const file = input.files[0];
-    selectedFile.value = file;
+    const file = input.files[0]
+    selectedFile.value = file
     submitUpload()
   }
 }
 
-const adminView = ref(false)
 </script>
 
 <template>
@@ -391,12 +423,20 @@ const adminView = ref(false)
         style="max-height: 180px; overflow-y: auto;"
       >
         <div
+          v-if="gameQueue.length > 0"
           v-for="user in gameQueue"
           :key="user.id"
           class="flex justify-between p-1"
         >
-          <p>{{ user.username }}</p>
-          <p>Waiting...</p>
+          <p class="font-bold text-indigo-700">{{ user.username }}</p>
+          <p class="text-rose-400">Wartet...</p>
+        </div>
+        <div
+          v-else
+          class="flex justify-between p-1"
+        >
+          <p>Keine Benutzer in der Queue</p>
+          <p></p>
         </div>
       </div>
       <h2 class="text-2xl font-bold">Alle laufenden Spiele</h2>
@@ -405,6 +445,23 @@ const adminView = ref(false)
         class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
         style="max-height: 180px; overflow-y: auto;"
       >
+        <div
+          v-if="currentGames.length > 0"
+          v-for="game in currentGames.filter(game => game.player1)"
+          :key="game.gameId"
+          class="flex justify-between p-1"
+        >
+          <p class="font-bold text-indigo-700">{{ game.player1.username }}</p>
+          <p>vs.</p>
+          <p class="font-bold text-indigo-700">{{ game.player2.username }}</p>
+        </div>
+        <div
+          v-else
+          class="flex justify-between p-1"
+        >
+          <p>Keine laufenden Spiele</p>
+          <p></p>
+        </div>
       </div>
       <h2 class="text-2xl font-bold">Alle Spieler</h2>
       <div
@@ -417,7 +474,7 @@ const adminView = ref(false)
           :key="user.id"
           class="flex justify-between p-1"
         >
-          <p>{{ user.username }}</p>
+          <p class="font-bold text-indigo-700">{{ user.username }}</p>
           <p>{{ user.mmr }}</p>
         </div>
       </div>
@@ -428,10 +485,10 @@ const adminView = ref(false)
     >
       <h2 class="text-2xl font-bold mb-4">Stats</h2>
       <div class=" rounded-xl bg-white shadow-md p-8 mt-4 mb-4 w-full justify-between">
-        <p class="p-2">Spiele gespielt: {{ winLoseRate.total }}</p>
-        <p class="p-2">Gewonnene Spiele: {{ winLoseRate.wins }}</p>
-        <p class="p-2">Verlorene Spiele: {{ winLoseRate.losses }}</p>
-        <p class="p-2">Winrate: {{ Math.round(winLoseRate.winLoseRate * 100) / 100 }}%</p>
+        <p class="p-2 font-bold">Spiele gespielt: {{ winLoseRate.total }}</p>
+        <p class="p-2 font-bold ">Gewonnene Spiele: {{ winLoseRate.wins }}</p>
+        <p class="p-2 font-bold">Verlorene Spiele: {{ winLoseRate.losses }}</p>
+        <p class="p-2 font-bold">Winrate: {{ Math.round(winLoseRate.winLoseRate * 100) / 100 }}%</p>
       </div>
       <h2 class="text-2xl font-bold">Spiele</h2>
       <div

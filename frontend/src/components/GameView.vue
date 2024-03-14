@@ -2,7 +2,7 @@
   setup
   lang="ts"
 >
-import { makeMoveOnBoard, type Game, FieldStatus } from "@/helpers/board"
+import { makeMoveOnBoard, type Game, FieldStatus, fetchQueueCount } from "@/helpers/board"
 import Chat, { type Message } from './Chat.vue'
 import useAuth from '@/helpers/auth'
 import { onMounted, ref, watch, watchEffect, type Ref, computed } from 'vue'
@@ -72,6 +72,7 @@ onMounted(async () => {
     console.log("fetched user:", currentUser.value.username)
   }
   startSocket()
+  playersInQueue.value = await fetchQueueCount()
 })
 
 // Starts the socket connection and listens to all messages
