@@ -9,6 +9,8 @@ import { useRouter } from 'vue-router'
 import { fetchUser, type User } from '@/helpers/user'
 const router = useRouter()
 const { isLoggedIn, checkAuth } = useAuth()
+import { io } from "socket.io-client"
+
 import krabs from '@/assets/krabs.png'
 import patrick from '@/assets/patrick.png'
 
@@ -31,10 +33,46 @@ onMounted(async () => {
   if (user) {
     currentUser.value = user
   }
+
+  const socket = io('http://localhost:3000', { path: '/socket.io' })
+  socket.on("connect", () => {
+    console.log(`Connected to the server with Socket ID: ${socket.id}`)
+    // Example: Emit a 'search' event to the server
+    socket.emit('search')
+  })
+
+  socket.on('search.count', (data) => {
+    console.log('Number of players in queue: ', data.count)
+  })
+  socket.on('game.new', (data) => {
+    console.log('New game started: ', data)
+    // Handle new game setup here
+  })
+  socket.on('game.update', (data) => {
+    // Update game state based on the received message
+  })
+  socket.on('game.end', (data) => {
+    // Handle game end
+  })
+  socket.on('error', (errorMsg) => {
+    console.error('Error: ', errorMsg)
+  })
+  // Socket.IO handles the connection and error events differently than the WebSocket API
+  socket.on('connect', () => {
+    console.log('Connected to the server')
+  })
+  socket.on('disconnect', (reason) => {
+    console.log('WebSocket connection closed', reason)
+  })
+  socket.io.on('error', (error) => {
+    console.error('Socket.IO connection error', error)
+  })
+
+
 })
 
 const board = ref([
-  ['X', 'O', ''],
+  ['', '', ''],
   ['', '', ''],
   ['', '', '']
 ])
@@ -121,7 +159,7 @@ function checkWinner (): void {
       </div>
       <div
         id="tic-tac-toe"
-        class="my-4"
+        class="my-8"
       >
         <div
           v-for="(row, rowIndex) in board"
@@ -180,12 +218,12 @@ function checkWinner (): void {
         <div class="ml-2 font-bold">{{ currentUser.username }}</div>
         <div class="ml-1">({{ currentUser.mmr }})</div>
       </div>
-      <router-link
+      <button
         to="/play"
         class="bg-indigo-500 hover:bg-indigo-600 text-white text-center font-bold py-2 px-4 rounded-xl shadow-md mt-16"
       >
         Neues Spiel beginnen
-      </router-link>
+      </button>
     </div>
 
     <div class="right rounded-xl">
