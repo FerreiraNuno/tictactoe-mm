@@ -131,21 +131,21 @@ export class UserController {
 
     @Put("/update-password")
     @ApiBearerAuth()
-    @ApiResponse({status: HttpStatus.OK, description: 'The password was updated successfully'})
-    @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'The Password is to short or to long'})
     @UseGuards(IsLoggedInGuard)
-    @ApiResponse({type: User})
+    @ApiResponse({status: HttpStatus.OK, description: 'The password was updated successfully', type: User})
+    @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'The Password is to short or to long'})
     async updateUserPassword(@Body() user: UpdatePasswordDTO, @Req() req: Request) {
         const id = req.headers['user-id'];
         this.userService.checkUpdatedPassword(user.password)
         await this.userService.updateUserPassword(id, user)
+        return "success"
     }
 
     @Put('/:id/upload-image')
     @ApiBearerAuth()
     @UseGuards(IsLoggedInGuard)
     @UseInterceptors(FileInterceptor('image'))
-    @ApiResponse({status: 200, description: 'Image uploaded successfully', type: Response})
+    @ApiResponse({status: 200, description: 'Image uploaded successfully'})
     async uploadImage(@Param('id') id: number, @UploadedFile() file: Express.Multer.File, @Req() req: Request): Promise<Response> {
         const user: User = await this.userService.getUserByRequest(req)
         if (!user.isAdmin && user.id != id) {

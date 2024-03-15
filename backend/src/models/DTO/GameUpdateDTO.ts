@@ -5,10 +5,26 @@ import {ApiProperty} from "@nestjs/swagger";
 export class GameUpdateDTO {
 
 
-    @ApiProperty()
+    @ApiProperty({
+        description: "The current status of the game field",
+        example: [
+            [
+                [0,0,1]
+            ],
+            [
+                [2,0,0]
+            ],
+            [
+                [0,0,1]
+            ]
+        ],
+    })
     public field: FieldStatus[][]
 
-    @ApiProperty()
+    @ApiProperty({
+        description: "The username if the currently active player",
+        example: 1000
+    })
     public activePlayerName: string
 
     static fromGame(game: Game) {

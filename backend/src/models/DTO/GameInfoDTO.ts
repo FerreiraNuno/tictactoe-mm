@@ -2,12 +2,31 @@ import {UserInfoDTO} from "./UserInfoDTO";
 import {ApiProperty} from "@nestjs/swagger";
 
 export class GameInfoDTO {
-    @ApiProperty()
+    @ApiProperty({
+        description: "The id of the game you are referencing",
+        example: 1048
+    })
     public gameId: number
 
-    @ApiProperty()
+    @ApiProperty({
+        description: "Information about user",
+        example: {
+            "id": 2,
+            "username": "max",
+            "mmr": 1008,
+            "isAdmin": false
+        }
+    })
     public player1: UserInfoDTO
 
-    @ApiProperty()
+    @ApiProperty({
+        description: "Information about user",
+        example: {
+            "id": 2,
+            "username": "max",
+            "mmr": 1008,
+            "isAdmin": false
+        }
+    })
     public player2: UserInfoDTO
 }

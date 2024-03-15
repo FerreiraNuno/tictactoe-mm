@@ -3,7 +3,7 @@ import {
     Get,
     HttpStatus, Param, Req, UseGuards
 } from "@nestjs/common";
-import {ApiFoundResponse, ApiHeader, ApiResponse, ApiSecurity, ApiTags} from "@nestjs/swagger";
+import {ApiFoundResponse, ApiHeader, ApiProperty, ApiResponse, ApiSecurity, ApiTags} from "@nestjs/swagger";
 import {UserService} from "../../services/user/user.service";
 import {IsLoggedInGuard} from "../../middleware/is-logged-in-guard/is-logged-in-guard.service";
 import {GameResultService} from "../../services/game-result/game-result.service";
