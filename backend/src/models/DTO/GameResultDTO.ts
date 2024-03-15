@@ -54,12 +54,9 @@ export class GameResultDTO {
     static ofGameResult(gameResult: GameResult, allUsers: UserInfoDTO[]) {
         const gameResultDTO = new GameResultDTO();
 
-        function getUserNameByUserId(allUsers: UserInfoDTO[], player1: number) {
-            return allUsers.find(value => value.id === player1).username;
-        }
+        gameResultDTO.player1Name = allUsers.find(user => user.id === gameResult.player1)?.username || '';
+        gameResultDTO.player2Name = allUsers.find(user => user.id === gameResult.player2)?.username || '';
 
-        gameResultDTO.player1Name = getUserNameByUserId(allUsers, gameResult.player1)
-        gameResultDTO.player2Name = getUserNameByUserId(allUsers, gameResult.player2)
         gameResultDTO.id = gameResult.id
         gameResultDTO.player1 = gameResult.player1
         gameResultDTO.player2 = gameResult.player2

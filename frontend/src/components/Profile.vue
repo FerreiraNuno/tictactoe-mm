@@ -30,8 +30,10 @@ interface WinLoseRate {
 interface Games {
   id: number
   player1: number
+  player1Name: string
   player1mmr: number
   player2: number
+  player2Name: string
   player2mmr: number
   result: string
 }
@@ -160,7 +162,16 @@ async function fetchGameHistory () {
     if (!response.ok) {
       throw new Error('Failed to fetch game history.')
     }
-    games.value = await response.json()
+    const gameResults = await response.json()
+    console.log(gameResults)
+    games.value = gameResults.map(result => ({
+      player1Name: result.player1Name,
+      player1 : result.player1,
+      player2Name: result.player2Name,
+      player2: result.player2,
+      result: result.result
+    }))
+    console.log(games.value)
   } catch (error: any) {
     console.error('Error:', error)
   }
@@ -226,108 +237,7 @@ function handleFileSelect (event: Event) {
 </script>
 
 <template>
-  <div
-    v-if="showProfilePictureModal"
-    class="modal-mask"
-  >
-    <div class="modal-wrapper">
-      <div class="modal-container">
-        <h2 class="modal-title">Profilbild hochladen</h2>
-        <div class="modal-body">
-          <form class="p-9">
-            <label
-              for="profilePictureUpload"
-              class="block mb-4"
-            >
-              <span class="text-sm font-semibold">Bild auswählen:</span>
-              <input
-                type="file"
-                id="profilePictureUpload"
-                ref="profilePictureInput"
-                @change="handleFileSelect"
-                class="block w-full rounded-md border-0 p-1.5 mb-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              >
-            </label>
-            <div
-              v-if="profilePictureError"
-              class="alert alert-danger"
-            >{{ profilePictureError }}</div>
-            <div class="modal-actions">
-              <button
-                type="button"
-                @click="showProfilePictureModal = false; profilePictureError = ''"
-                class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-              >Abbrechen</button>
-              <button
-                type="submit"
-                class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              >Hochladen</button>
-            </div>
-          </form>
-        </div>
-        <button
-          @click="showProfilePictureModal = false"
-          class="btn-close absolute top-5 right-5"
-        >
-          <svg>
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
-  <div
-    v-if="showPasswordModal"
-    class="modal-mask"
-  >
-    <div class="modal-wrapper">
-      <div class="modal-container">
-        <h2 class="modal-title">Passwort ändern</h2>
-        <div class="modal-body">
-          <form
-            @submit.prevent="changePassword"
-            class="p-9"
-          >
-            <label for="newPassword">Neues Passwort:</label>
-            <input
-              type="password"
-              id="newPassword"
-              v-model="newPassword"
-              class="block w-full rounded-md border-0 p-1.5 mb-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-            >
-            <label for="confirmPassword">Neues Passwort bestätigen:</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              v-model="confirmPassword"
-              class="block w-full rounded-md border-0 p-1.5 mb-6 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-            >
-            <div
-              v-if="passwordChangeError"
-              class="alert alert-danger"
-            >{{ passwordChangeError }}</div>
-            <div class="modal-actions">
-              <button
-                type="button"
-                @click="showPasswordModal = false; newPassword = ''; confirmPassword = ''; passwordChangeError = ''"
-                class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-              >Abbrechen</button>
-              <button
-                type="submit"
-                class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              >Ändern</button>
-            </div>
-          </form>
-        </div>
-        <button
-          @click="showPasswordModal = false"
-          class="btn-close absolute top-5 right-5"
-        >
-          <svg>
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
+
   <div class="container mx-auto flex items-center justify-center p-2">
     <div class="container mt-8">
       <div class="rounded-xl flex flex-col px-16 py-8 pl-0 pt-0 pb-0 w-full h-full">
@@ -494,15 +404,121 @@ function handleFileSelect (event: Event) {
       <div
         id="container"
         class="rounded-xl bg-white shadow-md p-8 mt-4 mb-4"
-        style="max-height: 300px; overflow-y: auto;"
+        style="max-height: 280px; overflow-y: auto;"
       >
         <div
           v-for="game in games"
           :key="game.id"
           class="flex justify-between p-1"
         >
-          <p>{{ game.player1 }} vs. {{ game.player2 }}</p>
-          <p>{{ game.result }}</p>
+          <p>{{ String(game.player1Name)}} vs. {{ String(game.player2Name)}}</p>
+          <p v-if="game.result === 'P1_WON' && currentUser.id === game.player1" class="text-green-600">Gewonnen</p>
+          <p v-else-if="game.result === 'P2_WON' && currentUser.id === game.player2" class="text-green-600">Gewonnen</p>
+          <p v-else-if="game.result === 'P1_WON' && currentUser.id === game.player2" class="text-red-600">Verloren</p>
+          <p v-else-if="game.result === 'P2_WON' && currentUser.id === game.player1" class="text-red-600">Verloren</p>
+          <p v-else-if="game.result === 'DRAW'" class="text-gray-600">Unentschieden</p>
+        </div>
+      </div>
+    </div>
+    <div
+        v-if="showProfilePictureModal"
+        class="modal-mask"
+    >
+      <div class="modal-wrapper">
+        <div class="modal-container">
+          <div class="flex justify-between items-center"> <h2 class="modal-title">Profilbild hochladen</h2>
+            <div
+                class="bg-gray-300 hover:bg-gray-500 cursor-pointer hover:text-gray-300 font-sans text-gray-500 w-6 h-6 rounded-md flex items-center justify-center"
+                @click="showProfilePictureModal = false; profilePictureError = ''"
+            >
+              &times;
+            </div>
+          </div>
+          <div class="modal-body">
+            <form class="p-9">
+              <label
+                  for="profilePictureUpload"
+                  class="block mb-4"
+              >
+                <span class="text-sm font-semibold">Bild auswählen:</span>
+                <input
+                    type="file"
+                    id="profilePictureUpload"
+                    ref="profilePictureInput"
+                    @change="handleFileSelect"
+                    class="block w-full rounded-md border-0 p-1.5 mb-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                >
+              </label>
+              <div
+                  v-if="profilePictureError"
+                  class="alert alert-danger"
+              >{{ profilePictureError }}</div>
+              <div class="modal-actions">
+                <button
+                    type="button"
+                    @click="showProfilePictureModal = false; profilePictureError = ''"
+                    class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+                >Abbrechen</button>
+                <button
+                    type="submit"
+                    class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                >Hochladen</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+        v-if="showPasswordModal"
+        class="modal-mask"
+    >
+      <div class="modal-wrapper">
+        <div class="modal-container">
+          <div class="flex justify-between items-center"> <h2 class="modal-title">Passwort ändern</h2>
+            <div
+                class="bg-gray-300 hover:bg-gray-500 cursor-pointer hover:text-gray-300 font-sans text-gray-500 w-6 h-6 rounded-md flex items-center justify-center"
+                @click="showPasswordModal = false; passwordChangeError = ''"
+            >
+              &times;
+            </div>
+          </div>
+          <div class="modal-body">
+            <form
+                @submit.prevent="changePassword"
+                class="p-9"
+            >
+              <label for="newPassword">Neues Passwort:</label>
+              <input
+                  type="password"
+                  id="newPassword"
+                  v-model="newPassword"
+                  class="block w-full rounded-md border-0 p-1.5 mb-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              >
+              <label for="confirmPassword">Neues Passwort bestätigen:</label>
+              <input
+                  type="password"
+                  id="confirmPassword"
+                  v-model="confirmPassword"
+                  class="block w-full rounded-md border-0 p-1.5 mb-6 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              >
+              <div
+                  v-if="passwordChangeError"
+                  class="alert alert-danger"
+              >{{ passwordChangeError }}</div>
+              <div class="modal-actions">
+                <button
+                    type="button"
+                    @click="showPasswordModal = false; newPassword = ''; confirmPassword = ''; passwordChangeError = ''"
+                    class="flex w-full justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+                >Abbrechen</button>
+                <button
+                    type="submit"
+                    class="flex w-full justify-center rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                >Ändern</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -550,13 +566,4 @@ function handleFileSelect (event: Event) {
   gap: 10px;
 }
 
-.btn-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 5px;
-}
 </style>
