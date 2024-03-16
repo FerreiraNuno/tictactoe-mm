@@ -275,6 +275,7 @@ export class GameService {
                 })
 
                 this.games.delete(gameId)
+                this.emitUpdateGamesList()
             }
 
             if (game.player2 == connection) {
@@ -283,6 +284,7 @@ export class GameService {
                 })
 
                 this.games.delete(gameId)
+                this.emitUpdateGamesList()
             }
         }
     }
