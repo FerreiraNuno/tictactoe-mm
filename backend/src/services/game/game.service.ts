@@ -165,18 +165,18 @@ export class GameService {
             game.player2.client.emit("game.end", winMessageDTO)
             this.emitUpdateGamesList();
 
-            const playerLost = game.player1.user.id === winner.user.id ? game.player1 : game.player2
+            const playerLost = game.player1.user.id !== winner.user.id ? game.player1 : game.player2
 
             //TODO Save GameResult and calculate new elo for both players <- Check if works!
             await this.endMatchPlayerWon(winner, playerLost)
 
-            const endResult = game.player1.user.id === winner.user.id ? EndResult.PLAYER_1 : EndResult.PLAYER_2
+            const endResult = game.player1.user.id !== winner.user.id ? EndResult.PLAYER_1 : EndResult.PLAYER_2
             await this.saveGameRating(winner, playerLost, endResult)
 
             this.games.delete(payload.gameId)
             return;
         }
-        if (game.isFieldFull()) {
+        if (game.isFieldFull() && !game.checkForWin()) {
             //TODO Add how to handle when Field is full but no one won
             await this.endMatchDraw(game.player1, game.player2)
             await this.saveGameRating(game.player1, game.player2, EndResult.DRAW)
