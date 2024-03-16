@@ -123,10 +123,9 @@ const submitForm = async (e: Event) => {
       <p class="mt-10 text-center text-sm text-gray-700">
         Kein Mitglied?
         {{ ' ' }}
-        <a
-          href="/register"
+        <RouterLink to="/register"
           class="ml-1 font-bold leading-6 text-indigo-600 hover:text-indigo-500"
-        >Registrieren</a>
+        >Registrieren</RouterLink>
       </p>
     </div>
   </div>
