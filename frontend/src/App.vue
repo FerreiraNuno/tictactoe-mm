@@ -28,19 +28,18 @@ const logout = () => {
       aria-label="Global"
     >
       <div className="flex-1">
-        <a
-          href="/"
+        <RouterLink to="/"
           className="-m-1.5 p-1.5"
         >
           <span className="font-black text-2xl">TicTacToe</span>
-        </a>
+        </RouterLink>
       </div>
       <div className="flex flex-1 justify-end">
         <div
           v-if="isLoggedIn"
           class="flex"
         >
-          <a href="/profile">
+          <RouterLink to="/profile">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -68,7 +67,7 @@ const logout = () => {
                 </path>
               </g>
             </svg>
-          </a>
+          </RouterLink>
           <div class="border-l-2 border-gray-300 h-6 mx-6"></div>
           <a
             @click="logout"
@@ -77,13 +76,13 @@ const logout = () => {
             Log out <span aria-hidden="true">&rarr;</span>
           </a>
         </div>
-        <a
+        <RouterLink to ="/login"
           v-else
           href="/login"
           className="font-semibold text-gray-900"
         >
           Log in <span aria-hidden="true">&rarr;</span>
-        </a>
+        </RouterLink>
       </div>
     </nav>
   </header>
