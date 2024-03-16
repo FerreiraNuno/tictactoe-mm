@@ -319,8 +319,7 @@ export class GameService {
         for (const gameEntry of this.games) {
             const [gameId, game] = gameEntry;
             const gameInfo = new GameInfoDTO()
-            console.log("Game LOG:",game);
-            
+
             gameInfo.gameId = gameId
             if (game.player1) gameInfo.player1 = UserInfoDTO.fromUser(game.player1.user)
             if (game.player2) gameInfo.player2 = UserInfoDTO.fromUser(game.player2.user)
