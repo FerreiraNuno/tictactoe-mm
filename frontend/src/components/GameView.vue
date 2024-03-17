@@ -7,7 +7,7 @@ import Chat, { type Message } from './Chat.vue'
 import useAuth from '@/helpers/auth'
 import { onMounted, ref, watch, watchEffect, type Ref, computed } from 'vue'
 import { Socket, io } from "socket.io-client"
-import { fetchUser, type User } from '@/helpers/user'
+import { fetchUser, type User, fetchImage } from '@/helpers/user'
 import { useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
 import type { DefaultEventsMap } from '@socket.io/component-emitter'
@@ -92,6 +92,7 @@ async function startSocket () {
     playersInQueue.value = data.count
   })
   socket.on('game.new', (data) => {
+    console.log(data)
     newGameStarted(data)
   })
   socket.on('game.update', (data: Game) => {
@@ -146,12 +147,12 @@ function cancelQueue () {
   }
 }
 
-function newGameStarted (data: Game) {
+async function newGameStarted (data: Game) {
   game.value = data
   // fill the opponent ref with the correct user. The user that is not the current user is the opponent
   if (currentUser.value.username === data.player1Username) {
     opponent.value = {
-      id: 2,
+      id: data.player2Id,
       username: data.player2Username,
       mmr: data.player2mmr,
       isAdmin: false,
@@ -162,7 +163,7 @@ function newGameStarted (data: Game) {
     opponentUsername.value = data.player2Username
   } else {
     opponent.value = {
-      id: 1,
+      id: data.player1Id,
       username: data.player1Username,
       mmr: data.player1mmr,
       isAdmin: false,
@@ -172,6 +173,8 @@ function newGameStarted (data: Game) {
     }
     opponentUsername.value = data.player1Username
   }
+  const opponentImage = await fetchImage(opponent.value.id)
+  if (opponentImage) opponent.value.profilePicture = URL.createObjectURL(opponentImage)
   isGameOver.value = false
   isInQueue.value = false
   playersInQueue.value = 0
