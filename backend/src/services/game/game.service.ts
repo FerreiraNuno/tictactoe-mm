@@ -144,9 +144,14 @@ export class GameService {
 
   async makeMove (client: Socket, payload: MakeMoveDTO) {
     const game = this.games.get(payload.gameId)
+    if (!game) {
+      this.emitError(client, "game not found")
+      return
+    }
     const wsConnection = this.wsConnections.get(client.id)
     if (!game.isUserInGame(wsConnection)) {
-      throw new WsException("you are not allowed to make a move in this game")
+      this.emitError(client, "you are not allowed to make a move in this game")
+      return
     }
     game.makeMove(payload.xPos, payload.yPos, wsConnection)
 
