@@ -42,7 +42,7 @@ const latestMessage = ref<Message | null>(null)
 const game: Ref<Game | null> = ref(null)
 const playersInQueue = ref(0)
 const isInQueue = ref(false)
-const isGameOver: Ref<boolean | null> = ref(null)
+const isGameOver: Ref<boolean> = ref(false)
 
 // computed properties
 const isOpponentTurn = computed(() => (game.value && !isGameOver.value) ? game.value.currentUsername === opponentUsername.value : false)
@@ -183,7 +183,7 @@ async function newGameStarted (data: Game) {
 }
 
 function clickTile (rowIndex: number, cellIndex: number) {
-  if (game.value && socket) {
+  if (game.value && socket && !isGameOver.value) {
     const move = makeMoveOnBoard(rowIndex, cellIndex, 1, game.value.field)
     if (move) {
       let moveJson = {
