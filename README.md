@@ -69,6 +69,8 @@ GameStatusDTO {
     gameId: number
     player1Username: string
     player2Username: string
+    player1Id: number
+    player2Id: number
     player1mmr: number
     player2mmr: number
     field: FieldStatus[][]

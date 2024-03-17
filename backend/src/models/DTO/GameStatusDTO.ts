@@ -53,5 +53,18 @@ export class GameStatusDTO {
         description: "The username of the currently active player",
         example: "Tom"
     })
-    currentUsername: string
+    currentUsername: string;
+
+    @ApiProperty({
+        description: "The id of the user",
+        example: 1
+    })
+    player1Id: number;
+
+
+    @ApiProperty({
+        description: "The id of the user",
+        example: 2
+    })
+    player2Id: number;
 }

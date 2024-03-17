@@ -112,9 +112,13 @@ export class GameService {
 
         //TODO send all info about user <- Only MMR is needed to be displayed. Is added
         const gameDTO = new GameStatusDTO();
+        gameDTO.player1Id = connection.user.id
+        gameDTO.player2Id = opponentPlayer.user.id
         gameDTO.gameId = gameId
         gameDTO.player1Username = connection.user.username
         gameDTO.player2Username = opponentPlayer.user.username
+        gameDTO.player1Id = connection.user.id
+        gameDTO.player2Id = opponentPlayer.user.id
         gameDTO.player1mmr = connection.user.mmr;
         gameDTO.player2mmr = opponentPlayer.user.mmr;
         gameDTO.currentUsername = game.getActivePlayerName()
@@ -151,6 +155,8 @@ export class GameService {
         gameUpdateDTO.currentUsername = game.getActivePlayerName()
         gameUpdateDTO.player1Username = game.player1.user.username
         gameUpdateDTO.player2Username = game.player2.user.username
+        gameUpdateDTO.player1Id = game.player1.user.id
+        gameUpdateDTO.player2Id = game.player2.user.id
         gameUpdateDTO.field = game.getField()
         game.player1.client.emit("game.update", gameUpdateDTO)
         game.player2.client.emit("game.update", gameUpdateDTO)
