@@ -30,8 +30,10 @@ interface Games {
   id: number
   player1: number
   player1mmr: number
+  player1Name: string
   player2: number
   player2mmr: number
+  player2Name: string
   result: string
 }
 const allUsers: Ref<User[]> = ref([])
@@ -51,10 +53,13 @@ onMounted(async () => {
   if (user) {
     currentUser.value = user
   }
-  let users = await fetchAllUsers()
-  if (users) {
-    allUsers.value = users
+  if (currentUser.value.isAdmin) {
+    let users = await fetchAllUsers()
+    if (users) {
+      allUsers.value = users
+    }
   }
+
   await fetchGameHistory()
   await fetchGameQueue()
   await fetchWinLoseRate()
@@ -91,6 +96,7 @@ function startSocket () {
 
 // Fetch game queue
 async function fetchGameQueue () {
+  if (!currentUser.value.isAdmin) return
   try {
     const jwtToken = Cookies.get('jwtToken')
     if (!jwtToken) {
@@ -499,8 +505,27 @@ function handleFileSelect (event: Event) {
           :key="game.id"
           class="flex justify-between p-1"
         >
-          <p>{{ game.player1 }} vs. {{ game.player2 }}</p>
-          <p>{{ game.result }}</p>
+          <p class="font-bold text-indigo-700">{{ game.player1Name }} vs. {{ game.player2Name }}</p>
+          <p
+            v-if="game.result === 'P1_WON' && currentUser.id === game.player1"
+            class="text-green-600"
+          >Gewonnen</p>
+          <p
+            v-else-if="game.result === 'P2_WON' && currentUser.id === game.player2"
+            class="text-green-600"
+          >Gewonnen</p>
+          <p
+            v-else-if="game.result === 'P1_WON' && currentUser.id === game.player2"
+            class="text-red-600"
+          >Verloren</p>
+          <p
+            v-else-if="game.result === 'P2_WON' && currentUser.id === game.player1"
+            class="text-red-600"
+          >Verloren</p>
+          <p
+            v-else-if="game.result === 'DRAW'"
+            class="text-gray-600"
+          >Unentschieden</p>
         </div>
       </div>
     </div>

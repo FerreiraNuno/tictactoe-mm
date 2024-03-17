@@ -154,7 +154,7 @@ async function newGameStarted (data: Game) {
     opponent.value = {
       id: data.player2Id,
       username: data.player2Username,
-      mmr: data.player2mmr,
+      mmr: Math.floor(data.player2mmr),
       isAdmin: false,
       wins: 0,
       losses: 0,
@@ -165,7 +165,7 @@ async function newGameStarted (data: Game) {
     opponent.value = {
       id: data.player1Id,
       username: data.player1Username,
-      mmr: data.player1mmr,
+      mmr: Math.floor(data.player1mmr),
       isAdmin: false,
       wins: 0,
       losses: 0,
