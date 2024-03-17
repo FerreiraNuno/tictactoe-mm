@@ -153,7 +153,7 @@ function newGameStarted (data: Game) {
     opponent.value = {
       id: 2,
       username: data.player2Username,
-      mmr: 1000,
+      mmr: data.player2mmr,
       isAdmin: false,
       wins: 0,
       losses: 0,
@@ -164,7 +164,7 @@ function newGameStarted (data: Game) {
     opponent.value = {
       id: 1,
       username: data.player1Username,
-      mmr: 1000,
+      mmr: data.player1mmr,
       isAdmin: false,
       wins: 0,
       losses: 0,
@@ -247,7 +247,7 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
           </svg>
         </div>
         <div class="ml-2 font-bold">{{ opponent?.username }}</div>
-        <div class="ml-1">{{ "(" + opponent?.mmr ? opponent?.mmr : 1000 + ")" }}</div>
+        <div class="ml-1">{{ "(" + opponent ? opponent?.mmr : 1000 + ")" }}</div>
       </div>
 
 
