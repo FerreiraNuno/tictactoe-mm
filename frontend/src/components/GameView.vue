@@ -174,7 +174,7 @@ async function newGameStarted (data: Game) {
     opponentUsername.value = data.player1Username
   }
   const opponentImage = await fetchImage(opponent.value.id)
-  if (opponentImage) opponent.value.profilePicture = URL.createObjectURL(opponentImage)
+  if (opponentImage) opponent.value.profilePicture = opponentImage?.size !== 0 ? URL.createObjectURL(opponentImage!) : null
   isGameOver.value = false
   isInQueue.value = false
   playersInQueue.value = 0
@@ -213,7 +213,7 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
       <div class="flex justify-start w-full items-end ml-2">
         <div class="text-sm flex flex-col items-center">
           <img
-            v-if="opponent?.profilePicture"
+            v-if="opponent && opponent.profilePicture"
             :src="opponent.profilePicture"
             alt="Profilbild"
             class="shadow-md w-10 h-10 rounded-full mt-0"
@@ -250,7 +250,7 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
           </svg>
         </div>
         <div class="ml-2 font-bold">{{ opponent?.username }}</div>
-        <div class="ml-1">{{ "(" + opponent ? opponent?.mmr : 1000 + ")" }}</div>
+        <div class="ml-1">{{ opponent ? "(" + opponent?.mmr + ")" : "" }}</div>
       </div>
 
 
