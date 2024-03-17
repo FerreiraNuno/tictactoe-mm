@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     Body,
     Controller,
     Get, HttpException,
@@ -11,7 +12,14 @@ import {
 import {User} from "../../models/db-models/User";
 import {CreateUserDTO} from "../../models/DTO/CreateUserDTO";
 import {LoginDTO} from "../../models/DTO/LoginDTO";
-import {ApiBearerAuth, ApiResponse, ApiTags} from "@nestjs/swagger";
+import {
+    ApiBadRequestResponse,
+    ApiBearerAuth,
+    ApiBody,
+    ApiResponse,
+    ApiTags,
+    ApiUnauthorizedResponse
+} from "@nestjs/swagger";
 import {FileInterceptor} from "@nestjs/platform-express";
 import {Response} from "express";
 import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
@@ -108,9 +116,17 @@ export class UserController {
             }
         },
     })
+    @ApiResponse({status: HttpStatus.NOT_FOUND, description: `User with ID not found`})
+    @ApiResponse({status: HttpStatus.NO_CONTENT, description: 'the user has no image'})
     async getImage(@Param('id') id: number, @Res() res: Response) {
         const image: Buffer = await this.userService.getImage(id);
-        res.type('image/jpeg');
+        if (!image) {
+            res.status(HttpStatus.NO_CONTENT)
+            res.send()
+            return
+        }
+
+        res.type(this.userService.getValidType(image));
         res.send(image);
     }
 
@@ -145,12 +161,19 @@ export class UserController {
     @ApiBearerAuth()
     @UseGuards(IsLoggedInGuard)
     @UseInterceptors(FileInterceptor('image'))
+    @ApiBody({
+        description: 'Image file',
+        type: 'file',
+    })
     @ApiResponse({status: 200, description: 'Image uploaded successfully'})
+    @ApiUnauthorizedResponse({ description: 'Unauthorized: Only admin can upload images to other users profiles' })
+    @ApiBadRequestResponse({ description: 'Bad request: Only PNG or JPEG files are allowed' })
     async uploadImage(@Param('id') id: number, @UploadedFile() file: Express.Multer.File, @Req() req: Request): Promise<Response> {
         const user: User = await this.userService.getUserByRequest(req)
         if (!user.isAdmin && user.id != id) {
             throw new UnauthorizedException("only admin can upload images to other users profiles")
         }
+
         return await this.userService.uploadImage(id, file)
     }
 }

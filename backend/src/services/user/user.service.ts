@@ -1,15 +1,22 @@
-import { Reflector } from "@nestjs/core";
-import { HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { DataSource, Repository } from "typeorm";
-import { User } from "../../models/db-models/User";
-import { EncryptService } from "../encrypt/encrypt.service";
-import { UserInfoDTO } from "../../models/DTO/UserInfoDTO";
-import { CreateUserDTO } from "../../models/DTO/CreateUserDTO";
-import { LoginDTO } from "../../models/DTO/LoginDTO";
-import { response } from "express";
-import { AuthService } from "../auth/auth.service";
-import { UpdatePasswordDTO } from "../../models/DTO/UpdateUserDTO";
-import { GameEndStatusDTO } from "../../models/DTO/GameEndStatusDTO";
+import {Reflector} from "@nestjs/core";
+import {
+    HttpException,
+    HttpStatus,
+    Injectable,
+    NotFoundException,
+    UnauthorizedException,
+    UnprocessableEntityException
+} from "@nestjs/common";
+import {DataSource, Repository} from "typeorm";
+import {User} from "../../models/db-models/User";
+import {EncryptService} from "../encrypt/encrypt.service";
+import {UserInfoDTO} from "../../models/DTO/UserInfoDTO";
+import {CreateUserDTO} from "../../models/DTO/CreateUserDTO";
+import {LoginDTO} from "../../models/DTO/LoginDTO";
+import {response} from "express";
+import {AuthService} from "../auth/auth.service";
+import {UpdatePasswordDTO} from "../../models/DTO/UpdateUserDTO";
+import {GameEndStatusDTO} from "../../models/DTO/GameEndStatusDTO";
 import {JWTTokenDTO} from "../../models/DTO/JWTTokenDTO";
 
 @Injectable()
@@ -91,10 +98,31 @@ export class UserService {
         }
 
         user.image = file.buffer
+        if (!this.getValidType(user.image)) {
+            throw new UnprocessableEntityException("only PNG and JPEG are allowed")
+        }
+
         user = await this.userRepository.save(user);
         user.image == null ? response.status(HttpStatus.INTERNAL_SERVER_ERROR) : response.status(HttpStatus.OK)
         return response
     }
+
+    public getValidType(image: Buffer) {
+        if (image.length < 2) {
+            return null
+        }
+
+        if (image[0] === 0x89 && image[1] === 0x50) {
+            return 'image/png';
+        }
+
+        if (image[0] === 0xff && image[1] === 0xd8) {
+            return 'image/jpeg';
+        }
+
+        return null
+    }
+
 
     async getImage(id: number) {
         const user = await this.userRepository.findOneBy({id});
@@ -140,7 +168,7 @@ export class UserService {
     }
 
     async updateWinLostCount(id: number, hasWon: GameEndStatusDTO) { //TODO Check TIE function
-        const columnName = hasWon===GameEndStatusDTO.WIN ? "wins" : "losts";
+        const columnName = hasWon === GameEndStatusDTO.WIN ? "wins" : "losts";
         if (hasWon === GameEndStatusDTO.TIE) {
             return
         }
