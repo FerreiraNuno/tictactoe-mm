@@ -230,7 +230,14 @@ function handleFileSelect (event: Event) {
   >
     <div class="modal-wrapper">
       <div class="modal-container">
-        <h2 class="modal-title">Profilbild hochladen</h2>
+        <div class="flex justify-between items-center"> <h2 class="modal-title">Profilbild hochladen</h2>
+          <div
+              class="bg-gray-300 hover:bg-gray-500 cursor-pointer hover:text-gray-300 font-sans text-gray-500 w-6 h-6 rounded-md flex items-center justify-center"
+              @click="showProfilePictureModal = false; profilePictureError = ''"
+          >
+            &times;
+          </div>
+        </div>
         <div class="modal-body">
           <form class="p-9">
             <label
@@ -279,7 +286,14 @@ function handleFileSelect (event: Event) {
   >
     <div class="modal-wrapper">
       <div class="modal-container">
-        <h2 class="modal-title">Passwort ändern</h2>
+        <div class="flex justify-between items-center"> <h2 class="modal-title">Passwort ändern</h2>
+          <div
+              class="bg-gray-300 hover:bg-gray-500 cursor-pointer hover:text-gray-300 font-sans text-gray-500 w-6 h-6 rounded-md flex items-center justify-center"
+              @click="showPasswordModal = false; passwordChangeError = ''"
+          >
+            &times;
+          </div>
+        </div>
         <div class="modal-body">
           <form
             @submit.prevent="changePassword"
