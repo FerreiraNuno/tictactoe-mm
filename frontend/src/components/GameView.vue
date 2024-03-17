@@ -11,8 +11,6 @@ import { fetchUser, type User } from '@/helpers/user'
 import { useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
 import type { DefaultEventsMap } from '@socket.io/component-emitter'
-import krabs from '@/assets/krabs.png'
-import patrick from '@/assets/patrick.png'
 const router = useRouter()
 const { isLoggedIn, checkAuth } = useAuth()
 
@@ -159,7 +157,7 @@ function newGameStarted (data: Game) {
       isAdmin: false,
       wins: 0,
       losses: 0,
-      profilePicture: data.player2Username === "nuno_der" ? krabs : patrick,
+      profilePicture: null
     }
     opponentUsername.value = data.player2Username
   } else {
@@ -170,7 +168,7 @@ function newGameStarted (data: Game) {
       isAdmin: false,
       wins: 0,
       losses: 0,
-      profilePicture: data.player1Username === "nuno_der" ? krabs : patrick,
+      profilePicture: null
     }
     opponentUsername.value = data.player1Username
   }
