@@ -10,6 +10,7 @@ import { response } from "express";
 import { AuthService } from "../auth/auth.service";
 import { UpdatePasswordDTO } from "../../models/DTO/UpdateUserDTO";
 import { GameEndStatusDTO } from "../../models/DTO/GameEndStatusDTO";
+import {JWTTokenDTO} from "../../models/DTO/JWTTokenDTO";
 
 @Injectable()
 export class UserService {
@@ -48,7 +49,9 @@ export class UserService {
             newUser = await this.userRepository.save(newUser);
             console.log(`first user '${newUser.username}' was create. so it got updated to being an admin user`)
         }
-        return UserInfoDTO.fromUser(newUser)
+
+        const jwtToken = await this.authService.signIn(newUser.id, user.username);
+        return new JWTTokenDTO(jwtToken)
     }
 
     async login(user: LoginDTO) {
@@ -62,9 +65,7 @@ export class UserService {
         }
         //TODO: we only are using the user-id as an cookie because is is not clear yet if we are allowed to use jwt tokens
         const token = await this.authService.signIn(foundUser.id, foundUser.username);
-        return {
-            "jwtToken": token
-        }
+        return new JWTTokenDTO(token)
     }
 
     async getUser(id: number): Promise<User> {

@@ -19,6 +19,7 @@ import {UserService} from "../../services/user/user.service";
 import {IsLoggedInGuard} from "../../middleware/is-logged-in-guard/is-logged-in-guard.service";
 import {IsAdminGuard} from "../../middleware/is-admin/is-admin-guard.service";
 import {UpdatePasswordDTO} from "../../models/DTO/UpdateUserDTO";
+import {JWTTokenDTO} from "../../models/DTO/JWTTokenDTO";
 
 @Controller("/api/v1/user")
 @ApiTags('user')
@@ -31,10 +32,9 @@ export class UserController {
 
 
     @Post("/register")
-    @ApiResponse({status: HttpStatus.CREATED, description: 'The user was created successfully', type: UserInfoDTO})
+    @ApiResponse({status: HttpStatus.CREATED, description: 'The user was created successfully', type: JWTTokenDTO})
     @ApiResponse({status: HttpStatus.BAD_REQUEST, description: 'The Password or the username are to short or to long'})
-    @ApiResponse({type: UserInfoDTO})
-    async addUser(@Body() user: CreateUserDTO): Promise<UserInfoDTO> {
+    async addUser(@Body() user: CreateUserDTO): Promise<JWTTokenDTO> {
         this.userService.checkUserInfo(user.username, user.password)
         return await this.userService.register(user)
     }
@@ -45,11 +45,11 @@ export class UserController {
         status: HttpStatus.NOT_FOUND
     })
     @ApiResponse({
-        type: UserInfoDTO,
+        type: JWTTokenDTO,
         description: "After a successful login a 'game-userid' cookie will be set to identify the user for future requests",
         status: HttpStatus.OK
     })
-    async login(@Body() user: LoginDTO) {
+    async login(@Body() user: LoginDTO): Promise<JWTTokenDTO> {
         return await this.userService.login(user)
     }
 
