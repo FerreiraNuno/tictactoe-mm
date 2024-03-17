@@ -171,7 +171,12 @@ export class GameService {
             await this.endMatchPlayerWon(winner, playerLost)
 
             const endResult = game.player1.user.id !== winner.user.id ? EndResult.PLAYER_1 : EndResult.PLAYER_2
-            await this.saveGameRating(winner, playerLost, endResult)
+
+            if (game.player1.user.id !== winner.user.id) {
+                await this.saveGameRating(winner, playerLost, endResult)
+            } else {
+                await this.saveGameRating(playerLost, winner, endResult)
+            }
 
             this.games.delete(payload.gameId)
             return;
