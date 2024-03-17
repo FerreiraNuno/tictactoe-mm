@@ -5,12 +5,13 @@
 import { makeMoveOnBoard, type Game, FieldStatus, fetchQueueCount } from "@/helpers/board"
 import Chat, { type Message } from './Chat.vue'
 import useAuth from '@/helpers/auth'
-import { onMounted, ref, watch, watchEffect, type Ref, computed } from 'vue'
+import { onMounted, ref, watch, watchEffect, type Ref, computed, onBeforeMount, onBeforeUnmount } from 'vue'
 import { Socket, io } from "socket.io-client"
 import { fetchUser, type User, fetchImage } from '@/helpers/user'
 import { useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
 import type { DefaultEventsMap } from '@socket.io/component-emitter'
+import type { RefSymbol } from "@vue/reactivity"
 const router = useRouter()
 const { isLoggedIn, checkAuth } = useAuth()
 
@@ -87,6 +88,7 @@ async function startSocket () {
   socket.on('disconnect', (reason) => {
     console.log('WebSocket connection closed', reason)
     game.value = null
+    opponent.value = null
   })
   socket.on('search.count', (data) => {
     playersInQueue.value = data.count
@@ -203,6 +205,10 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
   }
   socket.emit('game.message', messageJSON)
 }
+
+onBeforeUnmount(() => {
+  socket.disconnect()
+})
 </script>
 
 <template>
