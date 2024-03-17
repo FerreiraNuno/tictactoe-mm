@@ -63,7 +63,7 @@ onMounted(async () => {
     if (users) {
       allUsers.value = users
     }
-    adminView.value = true
+    adminView.value = false
     startSocket()
   }
 })
