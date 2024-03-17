@@ -23,9 +23,6 @@ export interface GameInfo {
   player2: UserInfo
 }
 
-import krabs from '@/assets/krabs.png'
-import patrick from '@/assets/patrick.png'
-
 
 export async function fetchUser (): Promise<User | null> {
   try {
@@ -52,6 +49,8 @@ export async function fetchUser (): Promise<User | null> {
     const userData = await response.json()
 
     let file = await fetchImage(userData.id)
+    console.log(file)
+
 
     return {
       id: userData.id,
@@ -60,7 +59,7 @@ export async function fetchUser (): Promise<User | null> {
       isAdmin: userData.isAdmin,
       wins: 10,
       losses: 5,
-      profilePicture: file ? URL.createObjectURL(file) : null
+      profilePicture: file?.size !== 0 ? URL.createObjectURL(file!) : null
     }
 
   } catch (error: any) {
