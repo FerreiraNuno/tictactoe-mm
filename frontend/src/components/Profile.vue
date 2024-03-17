@@ -65,7 +65,7 @@ onMounted(async () => {
   await fetchWinLoseRate()
 
   if (currentUser.value.isAdmin) {
-    adminView.value = true
+    adminView.value = false
     startSocket()
   }
 })
