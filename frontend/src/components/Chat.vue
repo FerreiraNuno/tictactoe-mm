@@ -42,7 +42,7 @@ onMounted(() => {
     console.log("Game ended.: ", data)
     output.value.push({
       username: "server",
-      message: `${data.winner ? "Winner: " + data.winner : "It's a draw."}`,
+      message: `${data.winner != "It's a draw." ? "Winner: " + data.winner : data.winner}`,
       time: new Date()
     })
   })

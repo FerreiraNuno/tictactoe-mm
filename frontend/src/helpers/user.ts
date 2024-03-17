@@ -55,7 +55,7 @@ export async function fetchUser (): Promise<User | null> {
     return {
       id: userData.id,
       username: userData.username,
-      mmr: userData.mmr,
+      mmr: Math.floor(userData.mmr),
       isAdmin: userData.isAdmin,
       wins: 10,
       losses: 5,
