@@ -13,7 +13,6 @@ import { UserInfoDTO } from "../../models/DTO/UserInfoDTO"
 import { GameResultService } from "../game-result/game-result.service"
 import { GameResult } from "../../models/db-models/GameResult"
 import { EndResult } from "../../models/db-models/EndResult"
-import { WsException } from "@nestjs/websockets"
 import { InGameMassageDTO } from "../../models/DTO/InGameMassageDTO"
 import { GameInfoDTO } from "../../models/DTO/GameInfoDTO"
 
@@ -36,9 +35,9 @@ export class GameService {
     if (!bearerToken) {
       bearerToken = client.handshake.auth.jwtToken
       if (!bearerToken) {
+        this.emitError(client, "user not found")
         client.disconnect()
         return
-        // throw new WsException("no user token found")
       }
     }
 
@@ -144,9 +143,14 @@ export class GameService {
 
   async makeMove (client: Socket, payload: MakeMoveDTO) {
     const game = this.games.get(payload.gameId)
+    if (!game) {
+      this.emitError(client, "game not found")
+      return
+    }
     const wsConnection = this.wsConnections.get(client.id)
     if (!game.isUserInGame(wsConnection)) {
-      throw new WsException("you are not allowed to make a move in this game")
+      this.emitError(client, "you are not allowed to make a move in this game")
+      return
     }
     game.makeMove(payload.xPos, payload.yPos, wsConnection)
 
