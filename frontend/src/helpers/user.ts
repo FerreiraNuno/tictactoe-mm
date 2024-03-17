@@ -125,7 +125,7 @@ export async function putImage (file: File, id: number): Promise<void> {
   }
 }
 
-async function fetchImage (id: number): Promise<File | null> {
+export async function fetchImage (id: number): Promise<File | null> {
   try {
     const jwtToken = Cookies.get('jwtToken') // Assuming you're using js-cookie or a similar library
 

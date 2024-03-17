@@ -7,6 +7,8 @@ export interface Game {
   player2Username: string
   player1mmr: number
   player2mmr: number
+  player1Id: number
+  player2Id: number
   field: FieldStatus[][]
   currentUsername: string
 }
