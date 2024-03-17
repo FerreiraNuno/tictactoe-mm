@@ -3,16 +3,28 @@ import { User } from "../db-models/User";
 
 export class UserInfoDTO {
 
-  @ApiProperty()
+  @ApiProperty({
+    description: "The id of the user",
+    example: 1
+  })
   id: number;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: "The username of the user",
+    example: "Tom"
+  })
   username: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: "The elo rating of the user",
+    example: 1000
+  })
   mmr: number;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: "Is set to true, if the user is an administrator",
+    example: true
+  })
   isAdmin: boolean;
 
   static fromUser(user: User): UserInfoDTO {

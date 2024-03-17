@@ -9,6 +9,8 @@ lib-cov
 *.swp
 *.sqlite
 
+bun.lockb
+
 pids
 logs
 results

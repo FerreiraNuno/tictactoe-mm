@@ -2,10 +2,11 @@ import { Controller, Get, HttpStatus, UseGuards } from "@nestjs/common";
 import { GameService } from "../../services/game/game.service";
 import { IsAdminGuard } from "../../middleware/is-admin/is-admin-guard.service";
 import { UserInfoDTO } from "../../models/DTO/UserInfoDTO";
-import { ApiResponse } from "@nestjs/swagger";
+import {ApiResponse, ApiTags} from "@nestjs/swagger";
 
 @Controller('/api/v1/game')
-export class GamesController {
+@ApiTags('game')
+export class GameController {
 
 
   constructor(private gameService: GameService) {
@@ -23,7 +24,4 @@ export class GamesController {
   async getAllUsersInQueueCount(): Promise<number> {
     return this.gameService.getUserInQueueCount()
   }
-
-
-
 }

@@ -75,14 +75,14 @@ export class Game {
         return this.player1.client == connection.client || this.player2.client == connection.client;
     }
 
-    isFieldFull(){ //TODO Shorten the Function
-        for (let row = 0; row < 3;row++) {
-            for (let col = 0; col < 3;col++) {
-                if(this.field[row][col] === 0) {
-                    return true;
-                }
+    isFieldFull() {
+        for (const row of this.field) {
+            for (const cell of row) {
+                if (cell == FieldStatus.Empty)
+                    return false
             }
         }
-        return false;
+
+        return true
     }
 }
