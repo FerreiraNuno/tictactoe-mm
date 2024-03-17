@@ -43,10 +43,10 @@ const submitForm = async (e: Event) => {
       }, 200)
     } catch (error: any) {
       console.error('Error:', error)
-      errorMessage.value = error.message
+      errorMessage.value = "Benutzer oder Passwort ist ungültig"
     }
   } else {
-    errorMessage.value = 'Bitte überprüfen Sie Ihre Eingaben. Anfrage wurde nicht gesendet.'
+    errorMessage.value = 'Bitte füllen sie alle Felder aus.'
   }
 }
 </script>
@@ -123,7 +123,8 @@ const submitForm = async (e: Event) => {
       <p class="mt-10 text-center text-sm text-gray-700">
         Kein Mitglied?
         {{ ' ' }}
-        <RouterLink to="/register"
+        <RouterLink
+          to="/register"
           class="ml-1 font-bold leading-6 text-indigo-600 hover:text-indigo-500"
         >Registrieren</RouterLink>
       </p>
