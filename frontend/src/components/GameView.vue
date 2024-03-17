@@ -395,7 +395,7 @@ const sendMessageOverSocket = async (username: string, messageText: string) => {
 
 .right {
   flex: 1;
-  background-color: rgb(250, 250, 250);
+  background-color: rgb(255, 255, 255);
   min-width: 15em;
   border: 1px solid #e5e5e5;
 }
