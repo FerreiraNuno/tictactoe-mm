@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.7",
+    "js-cookie": "^3.0.5",
     "socket.io-client": "^4.7.4",
     "vue": "^3.3.11",
     "vue-router": "^4.2.5"
