@@ -34,7 +34,7 @@ export async function fetchUser (): Promise<User | null> {
     }
 
     // Make a GET request to the user endpoint
-    const response = await fetch('http://localhost:3000/api/v1/user', {
+    const response = await fetch('/api/v1/user', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -74,7 +74,7 @@ export async function fetchAllUsers (): Promise<User[] | null> {
     if (!jwtToken) {
       throw new Error('Authentication token not found. Please login first.')
     }
-    const response = await fetch('http://localhost:3000/api/v1/user/all', {
+    const response = await fetch('/api/v1/user/all', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -104,7 +104,7 @@ export async function putImage (file: File, id: number): Promise<void> {
     const formData = new FormData()
     formData.append('image', file)
 
-    const response = await fetch(`http://localhost:3000/api/v1/user/${id}/upload-image`, {
+    const response = await fetch(`/api/v1/user/${id}/upload-image`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${jwtToken}`, // Use the JWT token for authorization
@@ -134,7 +134,7 @@ export async function fetchImage (id: number): Promise<File | null> {
     }
 
     // Make a GET request to the user endpoint
-    const response = await fetch(`http://localhost:3000/api/v1/user/${id}/image`, {
+    const response = await fetch(`/api/v1/user/${id}/image`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${jwtToken}`, // Use the JWT token for authorization

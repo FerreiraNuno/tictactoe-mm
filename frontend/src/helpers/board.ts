@@ -37,7 +37,7 @@ export async function fetchQueueCount (): Promise<number> {
     }
 
     // Make a GET request to the user endpoint
-    const response = await fetch('http://localhost:3000/api/v1/game/queue/count', {
+    const response = await fetch('/api/v1/game/queue/count', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

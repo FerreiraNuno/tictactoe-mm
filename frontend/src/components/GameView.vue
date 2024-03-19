@@ -77,7 +77,7 @@ onMounted(async () => {
 // Starts the socket connection and listens to all messages
 async function startSocket () {
   const jwtToken = Cookies.get('jwtToken')
-  socket = io('http://localhost:3000', {
+  socket = io('', {
     auth: {
       jwtToken: jwtToken
     }

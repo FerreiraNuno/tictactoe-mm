@@ -73,7 +73,7 @@ onMounted(async () => {
 // Start socket connection
 function startSocket () {
   const jwtToken = Cookies.get('jwtToken')
-  socket = io('http://localhost:3000', {
+  socket = io('', {
     auth: {
       jwtToken: jwtToken
     }
@@ -102,7 +102,7 @@ async function fetchGameQueue () {
     if (!jwtToken) {
       throw new Error('Authentication token not found. Please login first.')
     }
-    const response = await fetch('http://localhost:3000/api/v1/game/queue', {
+    const response = await fetch('/api/v1/game/queue', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -129,7 +129,7 @@ async function fetchWinLoseRate () {
     if (!jwtToken) {
       throw new Error('Authentication token not found. Please login first.')
     }
-    const response = await fetch('http://localhost:3000/api/v1/history/win-lose-rate', {
+    const response = await fetch('/api/v1/history/win-lose-rate', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -154,7 +154,7 @@ async function fetchGameHistory () {
     if (!jwtToken) {
       throw new Error('Authentication token not found. Please login first.')
     }
-    const response = await fetch('http://localhost:3000/api/v1/history/all', {
+    const response = await fetch('/api/v1/history/all', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -184,7 +184,7 @@ const changePassword = async (e: Event) => {
   }
   try {
     const jwtToken = Cookies.get('jwtToken')
-    const response = await fetch('http://localhost:3000/api/v1/user/update-password', {
+    const response = await fetch('/api/v1/user/update-password', {
       method: 'PUT',
       headers: {
         'Accept': 'application/json',
